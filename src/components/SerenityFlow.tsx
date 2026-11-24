@@ -442,7 +442,7 @@ export function SerenityFlow() {
                                 ease: [0.19, 1, 0.22, 1],
                               }}
                               whileTap={{scale: 0.985}}
-                              className="relative overflow-hidden w-full rounded-2xl border border-[#e5d9f8]/14 bg-[#0b0714]/85 px-5 py-4 text-center text-[13px] leading-relaxed text-[#cfc4e3] backdrop-blur-2xl shadow-[0_16px_45px_rgba(0,0,0,0.55)] sm:text-[14px]"
+                              className="relative overflow-hidden w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-6 py-7 text-center text-[15px] leading-relaxed text-[#cfc4e3] backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:px-7 sm:py-8 sm:text-base [text-wrap:balance]"
                             >
                               <div
                                 aria-hidden="true"

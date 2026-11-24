@@ -24,7 +24,7 @@ export const SERENITY_SLOGAN = 'Find me in the future';
 export const NAME_MEANING_CONTENT = {
   pronunciation: '/səˈrɛnɪti/',
   whyThisName:
-    'En su sentido más puro representa calma y tranquilidad. Pero cuando elegí este nombre para nosotros solo pude pensar en esto: describe esa sensación de subir una montaña, las nubes tapando la vista hasta que ves la luz del sol asomándose, y en ese silencio te das cuenta de que llegaste a la cima.',
+    'Significa el estado de calma o tranquilidad. Pero cuando lo elegí para nosotros, quise darle una sensación especial.',
 };
 
 export const UNFORGETTABLE_CONTENT = {
@@ -35,21 +35,7 @@ export const UNFORGETTABLE_CONTENT = {
     [
       {text: 'Serenity', bold: true},
       {
-        text: ' se levanta como un espejo donde cada estudiante, con sus sueños y su propia esencia pueden verse reflejados y brillar a través de innovación y propósito.',
-        bold: false,
-      },
-    ],
-    [
-      {text: 'Con un enfoque atemporal ', bold: false},
-      {text: 'Serenity', bold: true},
-      {
-        text: ' cobrará un significado eterno plasmado en una promoción de cambio.',
-        bold: false,
-      },
-    ],
-    [
-      {
-        text: 'Lo que deseaba transmitir con este logo era el significado por encima de los diseños para enfocarnos en lo que verdaderamente importa: la culminación de un camino y muchos más que vendrán, la experiencia individual y compartida de cada estudiante entre momentos que no olvidarán.',
+        text: ' se levanta como un espejo donde los estudiantes puedan verse reflejados y brillar a través de innovación y propósito.',
         bold: false,
       },
     ],
@@ -63,7 +49,7 @@ export const MISSION_VISION_CONTENT = {
   },
   vision: {
     label: 'Visión',
-    text: 'Que por su significado, sea una promoción atemporal e inolvidable; de la mejor forma posible.',
+    text: 'Y que por su significado sea una promoción atemporal e inolvidable; de la mejor forma posible.',
   },
 };
 
@@ -102,9 +88,8 @@ export const LOGO_ALTERNATIVES: LogoAlternative[] = [
 export const EMBLEM_ELEMENTS: EmblemElement[] = [
   {
     id: 'cometa',
-    title: 'La Pasión',
-    shortMeaning:
-      'Entregarse con ilusión a aquello que nos hace sentir vivos y perseguir lo que soñamos.',
+    title: 'El Cometa',
+    shortMeaning: 'Representa esas metas y sueños.',
     image: assetUrl('assets/aistudio/cometa_logo_ac0dbce6.png'),
     glowColor: 'rgba(220, 238, 255, 0.34)',
     layout: {
@@ -118,7 +103,7 @@ export const EMBLEM_ELEMENTS: EmblemElement[] = [
     id: 'galaxia',
     title: 'La Galaxia',
     shortMeaning:
-      'Una promoción unida por el significado de cada estudiante. Un brillo irrepetible en un mismo universo.',
+      'Donde todos, como estrellas diferentes y únicas, brillamos en unidad como una sola promoción.',
     image: assetUrl('assets/aistudio/galaxia_logo_bf2dbb39.png'),
     glowColor: 'rgba(142, 68, 236, 0.42)',
     layout: {
@@ -131,8 +116,7 @@ export const EMBLEM_ELEMENTS: EmblemElement[] = [
   {
     id: 'silueta',
     title: 'Mirar al Cielo',
-    shortMeaning:
-      'Un reflejo de quien eres: atreverse a mirar arriba y soñar en grande sin dejar de aspirar a más.',
+    shortMeaning: 'Esa mirada fija en lo que deseas y soñar en grande.',
     image: assetUrl('assets/aistudio/silueta_logo_e302909d.png'),
     glowColor: 'rgba(233, 226, 245, 0.24)',
     layout: {
@@ -144,9 +128,9 @@ export const EMBLEM_ELEMENTS: EmblemElement[] = [
   },
   {
     id: 'estrella',
-    title: 'La Luz Interior',
+    title: 'La Esencia',
     shortMeaning:
-      'Ese brillo único que te define y que, aunque intentes ocultarlo, siempre termina saliendo.',
+      'Representa esa luz interior que te guía a lo que verdaderamente te apasiona.',
     image: assetUrl('assets/aistudio/estrella_logo_2ab4667f.png'),
     glowColor: 'rgba(217, 0, 255, 0.44)',
     layout: {
