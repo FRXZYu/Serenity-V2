@@ -15,7 +15,7 @@ import {
 } from '../data/serenityContent';
 import {ResilientEmblemImage} from './ResilientEmblemImage';
 
-type StepId = 'inicio' | 'nombre' | 'mision-vision' | 'inolvidable' | 'ending';
+type StepId = 'inolvidable' | 'mision-vision' | 'emblema' | 'nombre' | 'ending';
 type InicioPhase = 'united' | 'icons' | 'blocks';
 
 const LUXURY_EASE = [0.22, 1, 0.36, 1] as const;
@@ -74,7 +74,7 @@ const ALTERNATIVE_SLIDE_VARIANTS = {
 
 export function SerenityFlow() {
   const [introDone, setIntroDone] = useState(false);
-  const [step, setStep] = useState<StepId>('inicio');
+  const [step, setStep] = useState<StepId>('inolvidable');
   const [inicioPhase, setInicioPhase] = useState<InicioPhase>('united');
   const [hasInspectedIcon, setHasInspectedIcon] = useState(false);
   const [showStatements, setShowStatements] = useState(false);
@@ -109,7 +109,7 @@ export function SerenityFlow() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setIntroDone(true);
-    }, 1500);
+    }, 3000);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -203,7 +203,7 @@ export function SerenityFlow() {
       });
     }
 
-    if (step !== 'inicio') return;
+    if (step !== 'emblema') return;
     const emblemEl = emblemRef.current;
     if (!emblemEl) return;
 
@@ -249,7 +249,7 @@ export function SerenityFlow() {
   const goToStep = (next: StepId) => {
     setSelectedElement(null);
     setShowAlternatives(false);
-    if (next === 'inicio') {
+    if (next === 'emblema') {
       setInicioPhase('united');
       setHasInspectedIcon(false);
     }
@@ -259,8 +259,7 @@ export function SerenityFlow() {
     setStep(next);
   };
 
-  const handleInicioContinue = () => {
-    if (!introDone) return;
+  const handleEmblemContinue = () => {
     if (inicioPhase === 'united') {
       setInicioPhase('icons');
       return;
@@ -278,26 +277,25 @@ export function SerenityFlow() {
   };
 
   const handleBack = () => {
-    if (step === 'inicio') {
-      if (inicioPhase === 'blocks') setInicioPhase('icons');
-      else if (inicioPhase === 'icons') setInicioPhase('united');
-    } else if (step === 'nombre') {
-      setStep('inicio');
-      setInicioPhase(hasInspectedIcon ? 'icons' : 'blocks');
-    } else if (step === 'mision-vision') {
-      goToStep('nombre');
-    } else if (step === 'inolvidable') {
+    if (step === 'inolvidable') {
       if (showStatements) {
         setShowStatements(false);
-      } else {
-        goToStep('mision-vision');
       }
+    } else if (step === 'mision-vision') {
+      setShowStatements(true);
+      setStep('inolvidable');
+    } else if (step === 'emblema') {
+      if (inicioPhase === 'blocks') setInicioPhase('icons');
+      else if (inicioPhase === 'icons') setInicioPhase('united');
+      else goToStep('mision-vision');
+    } else if (step === 'nombre') {
+      setStep('emblema');
+      setInicioPhase(hasInspectedIcon ? 'icons' : 'blocks');
     } else if (step === 'ending') {
       if (showAlternatives) {
         setShowAlternatives(false);
       } else {
-        setShowStatements(true);
-        setStep('inolvidable');
+        goToStep('nombre');
       }
     }
   };
@@ -326,7 +324,7 @@ export function SerenityFlow() {
     <LayoutGroup>
       <main className="relative z-10 mx-auto flex h-[100dvh] w-full max-w-[440px] flex-col items-center overflow-hidden px-5 pt-safe pb-safe">
         {/* Subtle quiet back chevron */}
-        {step !== 'inicio' || inicioPhase !== 'united' ? (
+        {introDone && (step !== 'inolvidable' || showStatements) ? (
           <div className="absolute left-3 top-3 z-30 pt-safe">
             <button
               type="button"
@@ -339,7 +337,7 @@ export function SerenityFlow() {
           </div>
         ) : null}
 
-        {/* PERSISTENT SERENITY WORDMARK (Starts centered & slightly larger for 1.5s, then glides to resting top) */}
+        {/* PERSISTENT SERENITY WORDMARK (Starts centered & slightly larger for 3s, then glides to resting top) */}
         <div className="relative z-20 shrink-0 pt-5 sm:pt-7">
           <div ref={wordmarkRef}>
             <motion.div
@@ -364,32 +362,190 @@ export function SerenityFlow() {
         {/* SCREEN CONTENT STAGE */}
         <div className="relative flex flex-1 w-full flex-col overflow-hidden">
           <AnimatePresence mode="wait">
-            {/* ==================== 1. INICIO (UNITED -> 4 ICONS -> 4 BLOCKS) ==================== */}
-            {step === 'inicio' && (
+            {/* ==================== 1. QUÉ HACE INOLVIDABLE A UNA PROMOCIÓN (Appears after 3s splash) ==================== */}
+            {step === 'inolvidable' && (
               <motion.section
-                key="inicio"
+                key="inolvidable"
+                initial={{opacity: 0}}
+                animate={{opacity: introDone ? 1 : 0}}
+                exit={{opacity: 0}}
+                transition={{duration: 0.65, delay: introDone ? 0.34 : 0, ease: LUXURY_EASE}}
+                className={`flex flex-1 flex-col items-center justify-between overflow-hidden pb-6 pt-2 sm:pb-8 ${
+                  introDone ? 'pointer-events-auto' : 'pointer-events-none'
+                }`}
+              >
+                <div className="flex flex-1 w-full flex-col items-center justify-center px-0.5">
+                  <AnimatePresence mode="wait">
+                    {!showStatements ? (
+                      <motion.div
+                        key="question-card"
+                        initial={{opacity: 0, y: 18, scale: 0.96}}
+                        animate={
+                          introDone
+                            ? {opacity: 1, y: 0, scale: 1}
+                            : {opacity: 0, y: 18, scale: 0.96}
+                        }
+                        exit={{
+                          opacity: 0,
+                          scale: 0.94,
+                          y: -22,
+                          filter: 'blur(8px)',
+                          transition: {duration: 0.35, ease: LUXURY_EASE},
+                        }}
+                        transition={{
+                          duration: 0.7,
+                          delay: introDone ? 0.36 : 0,
+                          ease: LUXURY_EASE,
+                        }}
+                        className="w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 text-center backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:p-7"
+                      >
+                        <h2 className="font-serif text-2xl font-semibold leading-tight text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
+                          {UNFORGETTABLE_CONTENT.question}
+                        </h2>
+                        <p className="mt-3.5 text-sm leading-relaxed text-[#cfc4e3] sm:text-[15px]">
+                          {UNFORGETTABLE_CONTENT.answer}
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="statements-stack"
+                        initial={{opacity: 0}}
+                        animate={{opacity: 1}}
+                        transition={{duration: 0.2}}
+                        className="flex w-full flex-col gap-3 sm:gap-3.5"
+                      >
+                        {UNFORGETTABLE_CONTENT.statements.map((segments, idx) => {
+                          const hairlineGradients = [
+                            'from-transparent via-[#d900ff]/35 to-transparent',
+                            'from-transparent via-[#dceeff]/30 to-transparent',
+                            'from-transparent via-[#b4a6cc]/25 to-transparent',
+                          ];
+
+                          return (
+                            <motion.div
+                              key={idx}
+                              initial={{
+                                opacity: 0,
+                                y: 38,
+                                scale: 0.94,
+                                filter: 'blur(8px)',
+                              }}
+                              animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                                filter: 'blur(0px)',
+                              }}
+                              transition={{
+                                duration: 0.76,
+                                delay: 0.08 + idx * 0.15,
+                                ease: [0.19, 1, 0.22, 1],
+                              }}
+                              whileTap={{scale: 0.985}}
+                              className="relative overflow-hidden w-full rounded-2xl border border-[#e5d9f8]/14 bg-[#0b0714]/85 px-5 py-4 text-center text-[13px] leading-relaxed text-[#cfc4e3] backdrop-blur-2xl shadow-[0_16px_45px_rgba(0,0,0,0.55)] sm:text-[14px]"
+                            >
+                              <div
+                                aria-hidden="true"
+                                className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${hairlineGradients[idx]}`}
+                              />
+                              {segments.map((seg, sIdx) =>
+                                seg.bold ? (
+                                  <strong key={sIdx} className="font-semibold text-[#f5f0fc]">
+                                    {seg.text}
+                                  </strong>
+                                ) : (
+                                  <span key={sIdx}>{seg.text}</span>
+                                )
+                              )}
+                            </motion.div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex w-full justify-center pt-3">
+                  {introDone ? (
+                    <ContinueButton
+                      delay={showStatements ? 0.12 : 0.48}
+                      onClick={() => {
+                        if (!showStatements) {
+                          setShowStatements(true);
+                        } else {
+                          goToStep('mision-vision');
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="h-12 shrink-0" aria-hidden="true" />
+                  )}
+                </div>
+              </motion.section>
+            )}
+
+            {/* ==================== 2. MISIÓN Y VISIÓN ==================== */}
+            {step === 'mision-vision' && (
+              <motion.section
+                key="mision-vision"
                 initial={{opacity: 0}}
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className={`relative flex flex-1 flex-col items-center justify-between pb-5 pt-2 sm:pb-7 ${
-                  introDone ? 'pointer-events-auto' : 'pointer-events-none'
-                }`}
+                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
               >
-                <motion.div
-                  initial={false}
-                  animate={{
-                    opacity: introDone ? 1 : 0,
-                    scale: introDone ? 1 : 0.92,
-                    y: introDone ? 0 : 14,
-                  }}
-                  transition={{
-                    duration: 0.72,
-                    delay: introDone ? 0.36 : 0,
-                    ease: LUXURY_EASE,
-                  }}
-                  className="relative flex flex-1 w-full flex-col items-center justify-center"
-                >
+                <div className="flex flex-1 w-full flex-col items-center justify-center space-y-8 text-center">
+                  <motion.div
+                    initial={{opacity: 0, y: 12}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{...SMOOTH_TRANSITION, delay: 0.08}}
+                    className="max-w-[330px] space-y-2.5"
+                  >
+                    <span className="block text-xs font-medium tracking-[0.16em] text-[#d900ff] uppercase">
+                      {MISSION_VISION_CONTENT.mission.label}
+                    </span>
+                    <p className="font-serif text-2xl font-medium leading-snug text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
+                      {MISSION_VISION_CONTENT.mission.text}
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{scaleX: 0, opacity: 0}}
+                    animate={{scaleX: 1, opacity: 1}}
+                    transition={{duration: 0.6, delay: 0.16, ease: LUXURY_EASE}}
+                    className="mx-auto h-px w-28 bg-gradient-to-r from-transparent via-[#e5d9f8]/35 to-transparent"
+                  />
+
+                  <motion.div
+                    initial={{opacity: 0, y: 12}}
+                    animate={{opacity: 1, y: 0}}
+                    transition={{...SMOOTH_TRANSITION, delay: 0.22}}
+                    className="max-w-[330px] space-y-2.5"
+                  >
+                    <span className="block text-xs font-medium tracking-[0.16em] text-[#dceeff] uppercase">
+                      {MISSION_VISION_CONTENT.vision.label}
+                    </span>
+                    <p className="font-serif text-2xl font-medium leading-snug text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
+                      {MISSION_VISION_CONTENT.vision.text}
+                    </p>
+                  </motion.div>
+                </div>
+
+                <ContinueButton onClick={() => goToStep('emblema')} delay={0.25} />
+              </motion.section>
+            )}
+
+            {/* ==================== 3. EMBLEMA (UNITED -> 4 ICONS -> 4 BLOCKS) ==================== */}
+            {step === 'emblema' && (
+              <motion.section
+                key="emblema"
+                initial={{opacity: 0}}
+                animate={{opacity: 1}}
+                exit={{opacity: 0}}
+                transition={FADE_TRANSITION}
+                className="relative flex flex-1 flex-col items-center justify-between pb-5 pt-2 sm:pb-7"
+              >
+                <div className="relative flex flex-1 w-full flex-col items-center justify-center">
                   {/* 4 HORIZONTAL RECTANGLE BLOCKS LAYER (slots measured continuously; revealed AFTER icons land) */}
                   <div
                     className={`absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 sm:gap-3 ${
@@ -622,17 +778,13 @@ export function SerenityFlow() {
                       ) : null}
                     </AnimatePresence>
                   </div>
-                </motion.div>
+                </div>
 
-                {introDone ? (
-                  <ContinueButton onClick={handleInicioContinue} delay={0.48} />
-                ) : (
-                  <div className="h-12 shrink-0" aria-hidden="true" />
-                )}
+                <ContinueButton onClick={handleEmblemContinue} />
               </motion.section>
             )}
 
-            {/* ==================== 2. SIGNIFICADO DEL NOMBRE ==================== */}
+            {/* ==================== 4. SIGNIFICADO DEL NOMBRE ==================== */}
             {step === 'nombre' && (
               <motion.section
                 key="nombre"
@@ -664,165 +816,7 @@ export function SerenityFlow() {
                   </motion.div>
                 </div>
 
-                <ContinueButton onClick={() => goToStep('mision-vision')} delay={0.22} />
-              </motion.section>
-            )}
-
-            {/* ==================== 3. MISIÓN Y VISIÓN ==================== */}
-            {step === 'mision-vision' && (
-              <motion.section
-                key="mision-vision"
-                initial={{opacity: 0}}
-                animate={{opacity: 1}}
-                exit={{opacity: 0}}
-                transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
-              >
-                <div className="flex flex-1 w-full flex-col items-center justify-center space-y-8 text-center">
-                  <motion.div
-                    initial={{opacity: 0, y: 12}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{...SMOOTH_TRANSITION, delay: 0.08}}
-                    className="max-w-[330px] space-y-2.5"
-                  >
-                    <span className="block text-xs font-medium tracking-[0.16em] text-[#d900ff] uppercase">
-                      {MISSION_VISION_CONTENT.mission.label}
-                    </span>
-                    <p className="font-serif text-2xl font-medium leading-snug text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
-                      {MISSION_VISION_CONTENT.mission.text}
-                    </p>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{scaleX: 0, opacity: 0}}
-                    animate={{scaleX: 1, opacity: 1}}
-                    transition={{duration: 0.6, delay: 0.16, ease: LUXURY_EASE}}
-                    className="mx-auto h-px w-28 bg-gradient-to-r from-transparent via-[#e5d9f8]/35 to-transparent"
-                  />
-
-                  <motion.div
-                    initial={{opacity: 0, y: 12}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{...SMOOTH_TRANSITION, delay: 0.22}}
-                    className="max-w-[330px] space-y-2.5"
-                  >
-                    <span className="block text-xs font-medium tracking-[0.16em] text-[#dceeff] uppercase">
-                      {MISSION_VISION_CONTENT.vision.label}
-                    </span>
-                    <p className="font-serif text-2xl font-medium leading-snug text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
-                      {MISSION_VISION_CONTENT.vision.text}
-                    </p>
-                  </motion.div>
-                </div>
-
-                <ContinueButton onClick={() => goToStep('inolvidable')} delay={0.25} />
-              </motion.section>
-            )}
-
-            {/* ==================== 4. QUÉ HACE INOLVIDABLE A UNA PROMOCIÓN ==================== */}
-            {step === 'inolvidable' && (
-              <motion.section
-                key="inolvidable"
-                initial={{opacity: 0}}
-                animate={{opacity: 1}}
-                exit={{opacity: 0}}
-                transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between overflow-hidden pb-6 pt-2 sm:pb-8"
-              >
-                <div className="flex flex-1 w-full flex-col items-center justify-center px-0.5">
-                  <AnimatePresence mode="wait">
-                    {!showStatements ? (
-                      <motion.div
-                        key="question-card"
-                        initial={{opacity: 0, y: 16}}
-                        animate={{opacity: 1, y: 0}}
-                        exit={{
-                          opacity: 0,
-                          scale: 0.94,
-                          y: -22,
-                          filter: 'blur(8px)',
-                          transition: {duration: 0.35, ease: LUXURY_EASE},
-                        }}
-                        transition={SMOOTH_TRANSITION}
-                        className="w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 text-center backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:p-7"
-                      >
-                        <h2 className="font-serif text-2xl font-semibold leading-tight text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
-                          {UNFORGETTABLE_CONTENT.question}
-                        </h2>
-                        <p className="mt-3.5 text-sm leading-relaxed text-[#cfc4e3] sm:text-[15px]">
-                          {UNFORGETTABLE_CONTENT.answer}
-                        </p>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="statements-stack"
-                        initial={{opacity: 0}}
-                        animate={{opacity: 1}}
-                        transition={{duration: 0.2}}
-                        className="flex w-full flex-col gap-3 sm:gap-3.5"
-                      >
-                        {UNFORGETTABLE_CONTENT.statements.map((segments, idx) => {
-                          const hairlineGradients = [
-                            'from-transparent via-[#d900ff]/35 to-transparent',
-                            'from-transparent via-[#dceeff]/30 to-transparent',
-                            'from-transparent via-[#b4a6cc]/25 to-transparent',
-                          ];
-
-                          return (
-                            <motion.div
-                              key={idx}
-                              initial={{
-                                opacity: 0,
-                                y: 38,
-                                scale: 0.94,
-                                filter: 'blur(8px)',
-                              }}
-                              animate={{
-                                opacity: 1,
-                                y: 0,
-                                scale: 1,
-                                filter: 'blur(0px)',
-                              }}
-                              transition={{
-                                duration: 0.76,
-                                delay: 0.08 + idx * 0.15,
-                                ease: [0.19, 1, 0.22, 1],
-                              }}
-                              whileTap={{scale: 0.985}}
-                              className="relative overflow-hidden w-full rounded-2xl border border-[#e5d9f8]/14 bg-[#0b0714]/85 px-5 py-4 text-center text-[13px] leading-relaxed text-[#cfc4e3] backdrop-blur-2xl shadow-[0_16px_45px_rgba(0,0,0,0.55)] sm:text-[14px]"
-                            >
-                              <div
-                                aria-hidden="true"
-                                className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${hairlineGradients[idx]}`}
-                              />
-                              {segments.map((seg, sIdx) =>
-                                seg.bold ? (
-                                  <strong key={sIdx} className="font-semibold text-[#f5f0fc]">
-                                    {seg.text}
-                                  </strong>
-                                ) : (
-                                  <span key={sIdx}>{seg.text}</span>
-                                )
-                              )}
-                            </motion.div>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="flex w-full justify-center pt-3">
-                  <ContinueButton
-                    onClick={() => {
-                      if (!showStatements) {
-                        setShowStatements(true);
-                      } else {
-                        goToStep('ending');
-                      }
-                    }}
-                  />
-                </div>
+                <ContinueButton onClick={() => goToStep('ending')} delay={0.22} />
               </motion.section>
             )}
 
