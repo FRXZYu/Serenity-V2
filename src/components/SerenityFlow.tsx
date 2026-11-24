@@ -1,5 +1,11 @@
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {AnimatePresence, LayoutGroup, motion, type PanInfo} from 'motion/react';
+import {
+  AnimatePresence,
+  LayoutGroup,
+  MotionConfig,
+  motion,
+  type PanInfo,
+} from 'motion/react';
 import {ArrowRight, ChevronLeft, ChevronRight, Images, X} from 'lucide-react';
 import {
   CREDITS_LIST,
@@ -15,7 +21,14 @@ import {
 } from '../data/serenityContent';
 import {ResilientEmblemImage} from './ResilientEmblemImage';
 
-type StepId = 'inolvidable' | 'mision-vision' | 'emblema' | 'nombre' | 'ending';
+type StepId =
+  | 'portada'
+  | 'inolvidable'
+  | 'mision'
+  | 'vision'
+  | 'emblema'
+  | 'nombre'
+  | 'ending';
 type InicioPhase = 'united' | 'icons' | 'blocks';
 
 const LUXURY_EASE = [0.22, 1, 0.36, 1] as const;
@@ -27,7 +40,7 @@ const SMOOTH_TRANSITION = {
 };
 
 const FADE_TRANSITION = {
-  duration: 0.46,
+  duration: 0.44,
   ease: LUXURY_EASE,
 };
 
@@ -51,30 +64,72 @@ const LAYER_ASPECT_RATIOS: Record<SerenitySymbolId, number> = {
   estrella: 1534 / 1243,
 };
 
+const LAYER_ORDER: readonly SerenitySymbolId[] = ['galaxia', 'silueta', 'cometa', 'estrella'];
+
+const LAYER_DROP_SHADOW: Record<SerenitySymbolId, string> = {
+  estrella: 'drop-shadow-[0_0_24px_rgba(217,0,255,0.9)]',
+  galaxia: 'brightness-125 drop-shadow-[0_0_18px_rgba(142,68,236,0.85)]',
+  cometa: 'drop-shadow-[0_0_16px_rgba(220,238,255,0.48)]',
+  silueta: 'drop-shadow-[0_0_14px_rgba(233,226,245,0.28)]',
+};
+
+const ELEMENT_BY_ID = Object.fromEntries(
+  EMBLEM_ELEMENTS.map((el) => [el.id, el])
+) as Record<SerenitySymbolId, EmblemElement>;
+
+const ENDING_FRAGMENTS = [
+  {
+    id: 'galaxia' as const,
+    init: {x: 48, y: -38, rotate: 14, scale: 0.84},
+    delay: 0.06,
+    duration: 1.05,
+  },
+  {
+    id: 'silueta' as const,
+    init: {x: -46, y: 42, rotate: -9, scale: 0.88},
+    delay: 0.15,
+    duration: 1.1,
+  },
+  {
+    id: 'cometa' as const,
+    init: {x: -74, y: -62, rotate: -18, scale: 1.12},
+    delay: 0.24,
+    duration: 1.12,
+  },
+  {
+    id: 'estrella' as const,
+    init: {x: 58, y: 56, rotate: 24, scale: 1.2},
+    delay: 0.34,
+    duration: 1.16,
+  },
+] as const;
+
+const HAIRLINE_GRADIENTS = [
+  'from-transparent via-[#d900ff]/35 to-transparent',
+  'from-transparent via-[#dceeff]/30 to-transparent',
+  'from-transparent via-[#b4a6cc]/25 to-transparent',
+] as const;
+
 const ALTERNATIVE_SLIDE_VARIANTS = {
   enter: (direction: number) => ({
-    x: direction >= 0 ? 72 : -72,
+    x: direction >= 0 ? 64 : -64,
     opacity: 0,
-    scale: 0.94,
-    filter: 'blur(6px)',
+    scale: 0.96,
   }),
   center: {
     x: 0,
     opacity: 1,
     scale: 1,
-    filter: 'blur(0px)',
   },
   exit: (direction: number) => ({
-    x: direction >= 0 ? -72 : 72,
+    x: direction >= 0 ? -64 : 64,
     opacity: 0,
-    scale: 0.94,
-    filter: 'blur(6px)',
+    scale: 0.96,
   }),
 };
 
 export function SerenityFlow() {
-  const [introDone, setIntroDone] = useState(false);
-  const [step, setStep] = useState<StepId>('inolvidable');
+  const [step, setStep] = useState<StepId>('portada');
   const [inicioPhase, setInicioPhase] = useState<InicioPhase>('united');
   const [hasInspectedIcon, setHasInspectedIcon] = useState(false);
   const [showStatements, setShowStatements] = useState(false);
@@ -107,17 +162,26 @@ export function SerenityFlow() {
   });
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setIntroDone(true);
-    }, 3000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     const update = () => setViewport({w: window.innerWidth, h: window.innerHeight});
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Preload & decode all emblem and alternative images ahead of transitions for 0-jank animation
+  useEffect(() => {
+    const urls = [
+      SERENITY_WORDMARK,
+      ...EMBLEM_ELEMENTS.map((el) => el.image),
+      ...LOGO_ALTERNATIVES.map((alt) => alt.image),
+    ];
+    for (const src of urls) {
+      const img = new Image();
+      img.src = src;
+      if (typeof img.decode === 'function') {
+        img.decode().catch(() => {});
+      }
+    }
   }, []);
 
   const paginateAlternatives = useCallback((direction: number) => {
@@ -280,14 +344,18 @@ export function SerenityFlow() {
     if (step === 'inolvidable') {
       if (showStatements) {
         setShowStatements(false);
+      } else {
+        goToStep('portada');
       }
-    } else if (step === 'mision-vision') {
+    } else if (step === 'mision') {
       setShowStatements(true);
       setStep('inolvidable');
+    } else if (step === 'vision') {
+      goToStep('mision');
     } else if (step === 'emblema') {
       if (inicioPhase === 'blocks') setInicioPhase('icons');
       else if (inicioPhase === 'icons') setInicioPhase('united');
-      else goToStep('mision-vision');
+      else goToStep('vision');
     } else if (step === 'nombre') {
       setStep('emblema');
       setInicioPhase(hasInspectedIcon ? 'icons' : 'blocks');
@@ -311,68 +379,112 @@ export function SerenityFlow() {
     }
   };
 
-  const wordmarkTargetY = !introDone
+  const isCentered = step === 'portada';
+  const wordmarkTargetY = isCentered
     ? geometry.introCenterWordmarkY
     : step === 'nombre'
       ? geometry.nameCardWordmarkY
       : 0;
-  const wordmarkTargetScale = !introDone ? 1.22 : 1;
+  const wordmarkTargetScale = isCentered ? 1.25 : 1;
 
   const currentAlternative = LOGO_ALTERNATIVES[altIndex];
 
   return (
-    <LayoutGroup>
-      <main className="relative z-10 mx-auto flex h-[100dvh] w-full max-w-[440px] flex-col items-center overflow-hidden px-5 pt-safe pb-safe">
-        {/* Subtle quiet back chevron */}
-        {introDone && (step !== 'inolvidable' || showStatements) ? (
-          <div className="absolute left-3 top-3 z-30 pt-safe">
-            <button
-              type="button"
-              onClick={handleBack}
-              aria-label="Volver"
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-[#82739e] transition-colors duration-200 hover:text-[#f5f0fc] active:scale-95 focus-visible:outline-2 focus-visible:outline-[#d900ff]"
-            >
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
-          </div>
-        ) : null}
+    <MotionConfig reducedMotion="user">
+      <LayoutGroup>
+        <main className="relative z-10 mx-auto flex h-[100dvh] w-full max-w-[440px] flex-col items-center overflow-hidden px-5 pt-safe pb-safe">
+          {/* Subtle quiet back chevron */}
+          {step !== 'portada' ? (
+            <div className="absolute left-3 top-3 z-30 pt-safe">
+              <button
+                type="button"
+                onClick={handleBack}
+                aria-label="Volver"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-[#82739e] transition-colors duration-200 hover:text-[#f5f0fc] active:scale-95 focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+              >
+                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
 
-        {/* PERSISTENT SERENITY WORDMARK (Starts centered & slightly larger for 3s, then glides to resting top) */}
-        <div className="relative z-20 shrink-0 pt-5 sm:pt-7">
-          <div ref={wordmarkRef}>
-            <motion.div
-              initial={{opacity: 0, y: geometry.introCenterWordmarkY, scale: 1.22}}
-              animate={{
-                opacity: 1,
-                y: wordmarkTargetY,
-                scale: wordmarkTargetScale,
-              }}
-              transition={{duration: 0.85, ease: LUXURY_EASE}}
-              className="flex origin-center items-center justify-center"
-            >
-              <ResilientEmblemImage
-                src={SERENITY_WORDMARK}
-                alt="Serenity"
-                className="h-auto w-[195px] object-contain drop-shadow-[0_0_24px_rgba(245,240,252,0.18)] sm:w-[220px]"
+          {/* PERSISTENT SERENITY WORDMARK (Starts centered with blur on portada, then glides to resting top) */}
+          <div className="relative z-20 shrink-0 pt-5 sm:pt-7">
+            <div ref={wordmarkRef} className="relative">
+              {/* Soft breathing halo behind wordmark exclusively on portada */}
+              <motion.div
+                aria-hidden="true"
+                initial={{opacity: 0, scale: 0.75}}
+                animate={
+                  isCentered
+                    ? {opacity: [0.35, 0.65, 0.35], scale: [0.95, 1.08, 0.95], y: wordmarkTargetY}
+                    : {opacity: 0, scale: 0.75, y: wordmarkTargetY}
+                }
+                transition={{
+                  opacity: isCentered
+                    ? {duration: 4.2, repeat: Infinity, ease: 'easeInOut'}
+                    : {duration: 0.35, ease: LUXURY_EASE},
+                  scale: isCentered
+                    ? {duration: 4.2, repeat: Infinity, ease: 'easeInOut'}
+                    : {duration: 0.35, ease: LUXURY_EASE},
+                  y: {duration: 0.85, ease: LUXURY_EASE},
+                }}
+                className="pointer-events-none absolute -inset-x-10 -inset-y-6 rounded-full blur-2xl will-change-transform"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(142,68,236,0.34) 0%, rgba(217,0,255,0.14) 48%, rgba(4,2,8,0) 76%)',
+                }}
               />
-            </motion.div>
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: geometry.introCenterWordmarkY,
+                  scale: 1.25,
+                  filter: 'blur(16px)',
+                }}
+                animate={{
+                  opacity: 1,
+                  y: wordmarkTargetY,
+                  scale: wordmarkTargetScale,
+                  filter: 'blur(0px)',
+                }}
+                transition={{duration: 0.85, ease: LUXURY_EASE}}
+                className="relative flex origin-center items-center justify-center will-change-transform"
+              >
+                <ResilientEmblemImage
+                  src={SERENITY_WORDMARK}
+                  alt="Serenity"
+                  className="h-auto w-[195px] object-contain drop-shadow-[0_0_24px_rgba(245,240,252,0.18)] sm:w-[220px]"
+                />
+              </motion.div>
+            </div>
           </div>
-        </div>
 
-        {/* SCREEN CONTENT STAGE */}
-        <div className="relative flex flex-1 w-full flex-col overflow-hidden">
-          <AnimatePresence mode="wait">
-            {/* ==================== 1. QUÉ HACE INOLVIDABLE A UNA PROMOCIÓN (Appears after 3s splash) ==================== */}
+          {/* SCREEN CONTENT STAGE */}
+          <div className="relative flex flex-1 w-full flex-col overflow-hidden">
+            <AnimatePresence mode="wait">
+              {/* ==================== 0. PORTADA (LOGO IN CENTER WITH BLUR + CONTINUAR) ==================== */}
+              {step === 'portada' && (
+                <motion.section
+                  key="portada"
+                  initial={{opacity: 0}}
+                  animate={{opacity: 1}}
+                  exit={{opacity: 0}}
+                  transition={FADE_TRANSITION}
+                  className="flex flex-1 flex-col items-center justify-end pb-7 pt-2 sm:pb-9"
+                >
+                  <div className="flex-1" />
+                  <ContinueButton onClick={() => goToStep('inolvidable')} delay={0.32} />
+                </motion.section>
+              )}
+            {/* ==================== 1. QUÉ HACE INOLVIDABLE A UNA PROMOCIÓN ==================== */}
             {step === 'inolvidable' && (
               <motion.section
                 key="inolvidable"
                 initial={{opacity: 0}}
-                animate={{opacity: introDone ? 1 : 0}}
+                animate={{opacity: 1}}
                 exit={{opacity: 0}}
-                transition={{duration: 0.65, delay: introDone ? 0.34 : 0, ease: LUXURY_EASE}}
-                className={`flex flex-1 flex-col items-center justify-between overflow-hidden pb-6 pt-2 sm:pb-8 ${
-                  introDone ? 'pointer-events-auto' : 'pointer-events-none'
-                }`}
+                transition={FADE_TRANSITION}
+                className="flex flex-1 flex-col items-center justify-between overflow-hidden pb-6 pt-2 sm:pb-8"
               >
                 <div className="flex flex-1 w-full flex-col items-center justify-center px-0.5">
                   <AnimatePresence mode="wait">
@@ -380,24 +492,15 @@ export function SerenityFlow() {
                       <motion.div
                         key="question-card"
                         initial={{opacity: 0, y: 18, scale: 0.96}}
-                        animate={
-                          introDone
-                            ? {opacity: 1, y: 0, scale: 1}
-                            : {opacity: 0, y: 18, scale: 0.96}
-                        }
+                        animate={{opacity: 1, y: 0, scale: 1}}
                         exit={{
                           opacity: 0,
                           scale: 0.94,
-                          y: -22,
-                          filter: 'blur(8px)',
-                          transition: {duration: 0.35, ease: LUXURY_EASE},
+                          y: -20,
+                          transition: {duration: 0.3, ease: LUXURY_EASE},
                         }}
-                        transition={{
-                          duration: 0.7,
-                          delay: introDone ? 0.36 : 0,
-                          ease: LUXURY_EASE,
-                        }}
-                        className="w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 text-center backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:p-7"
+                        transition={SMOOTH_TRANSITION}
+                        className="w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 text-center backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:p-7"
                       >
                         <h2 className="font-serif text-2xl font-semibold leading-tight text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
                           {UNFORGETTABLE_CONTENT.question}
@@ -414,124 +517,141 @@ export function SerenityFlow() {
                         transition={{duration: 0.2}}
                         className="flex w-full flex-col gap-3 sm:gap-3.5"
                       >
-                        {UNFORGETTABLE_CONTENT.statements.map((segments, idx) => {
-                          const hairlineGradients = [
-                            'from-transparent via-[#d900ff]/35 to-transparent',
-                            'from-transparent via-[#dceeff]/30 to-transparent',
-                            'from-transparent via-[#b4a6cc]/25 to-transparent',
-                          ];
-
-                          return (
-                            <motion.div
-                              key={idx}
-                              initial={{
-                                opacity: 0,
-                                y: 38,
-                                scale: 0.94,
-                                filter: 'blur(8px)',
-                              }}
-                              animate={{
-                                opacity: 1,
-                                y: 0,
-                                scale: 1,
-                                filter: 'blur(0px)',
-                              }}
-                              transition={{
-                                duration: 0.76,
-                                delay: 0.08 + idx * 0.15,
-                                ease: [0.19, 1, 0.22, 1],
-                              }}
-                              whileTap={{scale: 0.985}}
-                              className="relative overflow-hidden w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-6 py-7 text-center text-[15px] leading-relaxed text-[#cfc4e3] backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:px-7 sm:py-8 sm:text-base [text-wrap:balance]"
-                            >
-                              <div
-                                aria-hidden="true"
-                                className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${hairlineGradients[idx]}`}
-                              />
-                              {segments.map((seg, sIdx) =>
-                                seg.bold ? (
-                                  <strong key={sIdx} className="font-semibold text-[#f5f0fc]">
-                                    {seg.text}
-                                  </strong>
-                                ) : (
-                                  <span key={sIdx}>{seg.text}</span>
-                                )
-                              )}
-                            </motion.div>
-                          );
-                        })}
+                        {UNFORGETTABLE_CONTENT.statements.map((segments, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{
+                              opacity: 0,
+                              y: 34,
+                              scale: 0.95,
+                            }}
+                            animate={{
+                              opacity: 1,
+                              y: 0,
+                              scale: 1,
+                            }}
+                            transition={{
+                              duration: 0.72,
+                              delay: 0.06 + idx * 0.14,
+                              ease: [0.19, 1, 0.22, 1],
+                            }}
+                            whileTap={{scale: 0.985}}
+                            className="relative overflow-hidden w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-6 py-7 text-center text-[15px] leading-relaxed text-[#cfc4e3] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:px-7 sm:py-8 sm:text-base [text-wrap:balance]"
+                          >
+                            <div
+                              aria-hidden="true"
+                              className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${HAIRLINE_GRADIENTS[idx % HAIRLINE_GRADIENTS.length]}`}
+                            />
+                            {segments.map((seg, sIdx) =>
+                              seg.bold ? (
+                                <strong key={sIdx} className="font-semibold text-[#f5f0fc]">
+                                  {seg.text}
+                                </strong>
+                              ) : (
+                                <span key={sIdx}>{seg.text}</span>
+                              )
+                            )}
+                          </motion.div>
+                        ))}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
                 <div className="flex w-full justify-center pt-3">
-                  {introDone ? (
-                    <ContinueButton
-                      delay={showStatements ? 0.12 : 0.48}
-                      onClick={() => {
-                        if (!showStatements) {
-                          setShowStatements(true);
-                        } else {
-                          goToStep('mision-vision');
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="h-12 shrink-0" aria-hidden="true" />
-                  )}
+                  <ContinueButton
+                    delay={showStatements ? 0.12 : 0.22}
+                    onClick={() => {
+                      if (!showStatements) {
+                        setShowStatements(true);
+                      } else {
+                        goToStep('mision');
+                      }
+                    }}
+                  />
                 </div>
               </motion.section>
             )}
 
-            {/* ==================== 2. MISIÓN Y VISIÓN ==================== */}
-            {step === 'mision-vision' && (
+            {/* ==================== 2. MISIÓN ==================== */}
+            {step === 'mision' && (
               <motion.section
-                key="mision-vision"
+                key="mision"
                 initial={{opacity: 0}}
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
                 className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
               >
-                <div className="flex flex-1 w-full flex-col items-center justify-center space-y-8 text-center">
-                  <motion.div
-                    initial={{opacity: 0, y: 12}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{...SMOOTH_TRANSITION, delay: 0.08}}
-                    className="max-w-[330px] space-y-2.5"
-                  >
-                    <span className="block text-xs font-medium tracking-[0.16em] text-[#d900ff] uppercase">
+                <div className="flex flex-1 w-full flex-col items-center justify-center text-center">
+                  <div className="max-w-[340px] space-y-4 px-2">
+                    <motion.span
+                      initial={{opacity: 0, y: 10}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{...SMOOTH_TRANSITION, delay: 0.05}}
+                      className="block text-xs font-medium tracking-[0.18em] text-[#d900ff] uppercase"
+                    >
                       {MISSION_VISION_CONTENT.mission.label}
-                    </span>
-                    <p className="font-serif text-2xl font-medium leading-snug text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
+                    </motion.span>
+                    <motion.div
+                      initial={{scaleX: 0, opacity: 0}}
+                      animate={{scaleX: 1, opacity: 1}}
+                      transition={{duration: 0.55, delay: 0.12, ease: LUXURY_EASE}}
+                      className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#d900ff]/55 to-transparent will-change-transform"
+                    />
+                    <motion.p
+                      initial={{opacity: 0, y: 14, scale: 0.97}}
+                      animate={{opacity: 1, y: 0, scale: 1}}
+                      transition={{...SMOOTH_TRANSITION, delay: 0.16}}
+                      className="font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
+                    >
                       {MISSION_VISION_CONTENT.mission.text}
-                    </p>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{scaleX: 0, opacity: 0}}
-                    animate={{scaleX: 1, opacity: 1}}
-                    transition={{duration: 0.6, delay: 0.16, ease: LUXURY_EASE}}
-                    className="mx-auto h-px w-28 bg-gradient-to-r from-transparent via-[#e5d9f8]/35 to-transparent"
-                  />
-
-                  <motion.div
-                    initial={{opacity: 0, y: 12}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{...SMOOTH_TRANSITION, delay: 0.22}}
-                    className="max-w-[330px] space-y-2.5"
-                  >
-                    <span className="block text-xs font-medium tracking-[0.16em] text-[#dceeff] uppercase">
-                      {MISSION_VISION_CONTENT.vision.label}
-                    </span>
-                    <p className="font-serif text-2xl font-medium leading-snug text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
-                      {MISSION_VISION_CONTENT.vision.text}
-                    </p>
-                  </motion.div>
+                    </motion.p>
+                  </div>
                 </div>
 
-                <ContinueButton onClick={() => goToStep('emblema')} delay={0.25} />
+                <ContinueButton onClick={() => goToStep('vision')} delay={0.22} />
+              </motion.section>
+            )}
+
+            {/* ==================== 3. VISIÓN ==================== */}
+            {step === 'vision' && (
+              <motion.section
+                key="vision"
+                initial={{opacity: 0}}
+                animate={{opacity: 1}}
+                exit={{opacity: 0}}
+                transition={FADE_TRANSITION}
+                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+              >
+                <div className="flex flex-1 w-full flex-col items-center justify-center text-center">
+                  <div className="max-w-[340px] space-y-4 px-2">
+                    <motion.span
+                      initial={{opacity: 0, y: 10}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{...SMOOTH_TRANSITION, delay: 0.05}}
+                      className="block text-xs font-medium tracking-[0.18em] text-[#dceeff] uppercase"
+                    >
+                      {MISSION_VISION_CONTENT.vision.label}
+                    </motion.span>
+                    <motion.div
+                      initial={{scaleX: 0, opacity: 0}}
+                      animate={{scaleX: 1, opacity: 1}}
+                      transition={{duration: 0.55, delay: 0.12, ease: LUXURY_EASE}}
+                      className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#dceeff]/55 to-transparent will-change-transform"
+                    />
+                    <motion.p
+                      initial={{opacity: 0, y: 14, scale: 0.97}}
+                      animate={{opacity: 1, y: 0, scale: 1}}
+                      transition={{...SMOOTH_TRANSITION, delay: 0.16}}
+                      className="font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
+                    >
+                      {MISSION_VISION_CONTENT.vision.text}
+                    </motion.p>
+                  </div>
+                </div>
+
+                <ContinueButton onClick={() => goToStep('emblema')} delay={0.22} />
               </motion.section>
             )}
 
@@ -641,8 +761,8 @@ export function SerenityFlow() {
                       }}
                     />
 
-                    {(['galaxia', 'silueta', 'cometa', 'estrella'] as const).map((id, idx) => {
-                      const el = EMBLEM_ELEMENTS.find((item) => item.id === id)!;
+                    {LAYER_ORDER.map((id, idx) => {
+                      const el = ELEMENT_BY_ID[id];
                       const iconDelta = geometry.iconDeltas[id];
                       const blockDelta = blockDeltas[id];
                       const isCurrentlyInOverlay = selectedElement?.id === el.id;
@@ -666,14 +786,7 @@ export function SerenityFlow() {
                             ? el.iconScale
                             : blockDelta.scale;
 
-                      const dropShadowClass =
-                        id === 'estrella'
-                          ? 'drop-shadow-[0_0_24px_rgba(217,0,255,0.9)]'
-                          : id === 'galaxia'
-                            ? 'brightness-125 drop-shadow-[0_0_18px_rgba(142,68,236,0.85)]'
-                            : id === 'cometa'
-                              ? 'drop-shadow-[0_0_16px_rgba(220,238,255,0.48)]'
-                              : 'drop-shadow-[0_0_14px_rgba(233,226,245,0.28)]';
+                      const tilt = idx % 2 === 0 ? 1.4 : -1.4;
 
                       return (
                         <div
@@ -700,25 +813,30 @@ export function SerenityFlow() {
                               delay: inicioPhase === 'blocks' ? idx * 0.04 : 0,
                               ease: LUXURY_EASE,
                             }}
-                            className="origin-center"
+                            className="origin-center will-change-transform"
                           >
-                            {/* Gentle subtle breathing in 'icons' mode so user intuitively knows to tap */}
+                            {/* Gentle orbital breathing + micro-tilt in 'icons' mode */}
                             <motion.div
                               animate={
                                 inicioPhase === 'icons' && !isCurrentlyInOverlay
-                                  ? {scale: [1, 1.045, 1], y: [0, -3, 0]}
-                                  : {scale: 1, y: 0}
+                                  ? {
+                                      scale: [1, 1.045, 1],
+                                      y: [0, -3.5, 0],
+                                      rotate: [0, tilt, 0],
+                                    }
+                                  : {scale: 1, y: 0, rotate: 0}
                               }
                               transition={
                                 inicioPhase === 'icons' && !isCurrentlyInOverlay
                                   ? {
-                                      duration: 3.0,
-                                      delay: idx * 0.32,
+                                      duration: 3.2,
+                                      delay: idx * 0.35,
                                       repeat: Infinity,
                                       ease: 'easeInOut',
                                     }
                                   : {duration: 0.25}
                               }
+                              className="will-change-transform"
                             >
                               {!isCurrentlyInOverlay ? (
                                 <motion.button
@@ -748,7 +866,7 @@ export function SerenityFlow() {
                                   <ResilientEmblemImage
                                     src={el.image}
                                     alt={el.title}
-                                    className={`h-auto w-full object-contain ${dropShadowClass}`}
+                                    className={`h-auto w-full object-contain ${LAYER_DROP_SHADOW[id]}`}
                                   />
                                 </motion.button>
                               ) : (
@@ -799,20 +917,32 @@ export function SerenityFlow() {
                     initial={{opacity: 0, y: 18, scale: 0.97}}
                     animate={{opacity: 1, y: 0, scale: 1}}
                     transition={{...SMOOTH_TRANSITION, delay: 0.14}}
-                    className="mt-6 w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] sm:p-7"
+                    className="mt-6 w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:p-7"
                   >
-                    <div className="flex items-center justify-between gap-3 border-b border-[#e5d9f8]/10 pb-3.5">
+                    <div className="relative flex items-center justify-between gap-3 pb-3.5">
                       <span className="text-[11px] font-medium tracking-[0.14em] text-[#82739e] uppercase">
                         Significado
                       </span>
                       <span className="font-serif text-lg font-medium tracking-wide text-[#e9e2f5]">
                         {NAME_MEANING_CONTENT.pronunciation}
                       </span>
+                      <motion.div
+                        aria-hidden="true"
+                        initial={{scaleX: 0}}
+                        animate={{scaleX: 1}}
+                        transition={{duration: 0.65, delay: 0.28, ease: LUXURY_EASE}}
+                        className="absolute inset-x-0 bottom-0 h-px origin-center bg-[#e5d9f8]/14"
+                      />
                     </div>
 
-                    <p className="mt-4 text-center text-sm leading-relaxed text-[#cfc4e3]">
+                    <motion.p
+                      initial={{opacity: 0, y: 8}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{duration: 0.5, delay: 0.28, ease: LUXURY_EASE}}
+                      className="mt-4 text-center text-sm leading-relaxed text-[#cfc4e3]"
+                    >
                       {NAME_MEANING_CONTENT.whyThisName}
-                    </p>
+                    </motion.p>
                   </motion.div>
                 </div>
 
@@ -850,51 +980,24 @@ export function SerenityFlow() {
                         opacity: {duration: 4.5, delay: 0.65, repeat: Infinity, ease: 'easeInOut'},
                         scale: {duration: 4.5, delay: 0.65, repeat: Infinity, ease: 'easeInOut'},
                       }}
-                      className="pointer-events-none absolute -inset-10 rounded-full blur-3xl"
+                      className="pointer-events-none absolute -inset-10 rounded-full blur-3xl will-change-transform"
                       style={{
                         background:
                           'radial-gradient(circle, rgba(217,0,255,0.34) 0%, rgba(142,68,236,0.28) 42%, rgba(220,238,255,0.08) 68%, rgba(4,2,8,0) 80%)',
                       }}
                     />
 
-                    {(
-                      [
-                        {
-                          id: 'galaxia' as const,
-                          init: {x: 48, y: -38, rotate: 14, scale: 0.84},
-                          delay: 0.06,
-                          duration: 1.05,
-                        },
-                        {
-                          id: 'silueta' as const,
-                          init: {x: -46, y: 42, rotate: -9, scale: 0.88},
-                          delay: 0.15,
-                          duration: 1.1,
-                        },
-                        {
-                          id: 'cometa' as const,
-                          init: {x: -74, y: -62, rotate: -18, scale: 1.12},
-                          delay: 0.24,
-                          duration: 1.12,
-                        },
-                        {
-                          id: 'estrella' as const,
-                          init: {x: 58, y: 56, rotate: 24, scale: 1.2},
-                          delay: 0.34,
-                          duration: 1.16,
-                        },
-                      ] as const
-                    ).map((item) => {
-                      const el = EMBLEM_ELEMENTS.find((entry) => entry.id === item.id)!;
-                      const dropShadowClass =
-                        item.id === 'estrella'
-                          ? 'drop-shadow-[0_0_24px_rgba(217,0,255,0.9)]'
-                          : item.id === 'galaxia'
-                            ? 'brightness-125 drop-shadow-[0_0_18px_rgba(142,68,236,0.85)]'
-                            : item.id === 'cometa'
-                              ? 'drop-shadow-[0_0_16px_rgba(220,238,255,0.48)]'
-                              : 'drop-shadow-[0_0_14px_rgba(233,226,245,0.28)]';
+                    {/* Subtle radial lock-in pulse ring when the 4 fragments finish uniting */}
+                    <motion.div
+                      aria-hidden="true"
+                      initial={{opacity: 0, scale: 0.5}}
+                      animate={{opacity: [0, 0.55, 0], scale: [0.55, 1.35, 1.55]}}
+                      transition={{duration: 1.0, delay: 0.95, ease: LUXURY_EASE}}
+                      className="pointer-events-none absolute inset-2 rounded-full border border-[#e5d9f8]/30 will-change-transform"
+                    />
 
+                    {ENDING_FRAGMENTS.map((item) => {
+                      const el = ELEMENT_BY_ID[item.id];
                       return (
                         <motion.div
                           key={el.id}
@@ -922,12 +1025,12 @@ export function SerenityFlow() {
                             delay: item.delay,
                             ease: ASSEMBLY_EASE,
                           }}
-                          className="absolute z-10 origin-center"
+                          className="absolute z-10 origin-center will-change-transform"
                         >
                           <ResilientEmblemImage
                             src={el.image}
                             alt={el.title}
-                            className={`h-auto w-full object-contain ${dropShadowClass}`}
+                            className={`h-auto w-full object-contain ${LAYER_DROP_SHADOW[item.id]}`}
                           />
                         </motion.div>
                       );
@@ -1199,6 +1302,7 @@ export function SerenityFlow() {
         </AnimatePresence>
       </main>
     </LayoutGroup>
+    </MotionConfig>
   );
 }
 
@@ -1215,11 +1319,25 @@ function ContinueButton({onClick, delay = 0.12}: ContinueButtonProps) {
       initial={{opacity: 0, y: 10}}
       animate={{opacity: 1, y: 0}}
       transition={{duration: 0.45, delay, ease: LUXURY_EASE}}
-      className="group flex min-h-[48px] w-full max-w-[260px] shrink-0 items-center justify-center gap-2 rounded-full bg-[#f5f0fc] px-6 py-3 text-sm font-semibold tracking-wide text-[#040208] shadow-[0_0_28px_rgba(229,217,248,0.2)] transition-all duration-200 hover:bg-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5f0fc]"
+      className="group relative flex min-h-[48px] w-full max-w-[260px] shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full bg-[#f5f0fc] px-6 py-3 text-sm font-semibold tracking-wide text-[#040208] shadow-[0_0_28px_rgba(229,217,248,0.2)] transition-all duration-200 hover:bg-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f5f0fc]"
     >
-      <span>Continuar</span>
+      {/* Subtle periodic light sheen across the CTA */}
+      <motion.span
+        aria-hidden="true"
+        initial={{x: '-140%'}}
+        animate={{x: '240%'}}
+        transition={{
+          duration: 1.5,
+          delay: 1.2,
+          repeat: Infinity,
+          repeatDelay: 3.4,
+          ease: 'easeInOut',
+        }}
+        className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/70 to-transparent will-change-transform"
+      />
+      <span className="relative z-10">Continuar</span>
       <ArrowRight
-        className="h-4 w-4 text-[#5b189a] transition-transform duration-200 group-hover:translate-x-0.5"
+        className="relative z-10 h-4 w-4 text-[#5b189a] transition-transform duration-200 group-hover:translate-x-0.5"
         aria-hidden="true"
       />
     </motion.button>

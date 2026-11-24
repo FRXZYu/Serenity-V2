@@ -33,7 +33,7 @@ export const UNFORGETTABLE_CONTENT = {
     'Para nosotros, son los estudiantes que la conforman, pero, sobre todo, el significado que se le da a todo lo que representan.',
   statements: [
     [
-      {text: 'Serenity', bold: true},
+      {text: 'Esta promoción', bold: true},
       {
         text: ' se levanta como un espejo donde los estudiantes puedan verse reflejados y brillar a través de innovación y propósito.',
         bold: false,
