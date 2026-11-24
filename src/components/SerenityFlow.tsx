@@ -110,6 +110,33 @@ const HAIRLINE_GRADIENTS = [
   'from-transparent via-[#b4a6cc]/25 to-transparent',
 ] as const;
 
+// Distinct serene layered unveiling for the first emblem appearance (never scattered/rotated like the ending)
+const EMBLEM_UNVEIL_ENTRANCE: Record<
+  SerenitySymbolId,
+  {initial: {opacity: number; x?: number; y?: number; scale?: number}; delay: number; duration: number}
+> = {
+  galaxia: {
+    initial: {opacity: 0, scale: 0.82},
+    delay: 0.04,
+    duration: 0.85,
+  },
+  silueta: {
+    initial: {opacity: 0, y: 20, scale: 0.96},
+    delay: 0.16,
+    duration: 0.9,
+  },
+  estrella: {
+    initial: {opacity: 0, scale: 0.45},
+    delay: 0.34,
+    duration: 0.85,
+  },
+  cometa: {
+    initial: {opacity: 0, x: 26, y: -18, scale: 0.92},
+    delay: 0.44,
+    duration: 0.9,
+  },
+};
+
 const ALTERNATIVE_SLIDE_VARIANTS = {
   enter: (direction: number) => ({
     x: direction >= 0 ? 64 : -64,
@@ -166,22 +193,6 @@ export function SerenityFlow() {
     update();
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
-  }, []);
-
-  // Preload & decode all emblem and alternative images ahead of transitions for 0-jank animation
-  useEffect(() => {
-    const urls = [
-      SERENITY_WORDMARK,
-      ...EMBLEM_ELEMENTS.map((el) => el.image),
-      ...LOGO_ALTERNATIVES.map((alt) => alt.image),
-    ];
-    for (const src of urls) {
-      const img = new Image();
-      img.src = src;
-      if (typeof img.decode === 'function') {
-        img.decode().catch(() => {});
-      }
-    }
   }, []);
 
   const paginateAlternatives = useCallback((direction: number) => {
@@ -727,9 +738,10 @@ export function SerenityFlow() {
                     }}
                     className="relative pointer-events-none"
                   >
-                    {/* Cosmic Glow behind logo */}
+                    {/* Cosmic Glow blooms gently on first reveal and breathes when united */}
                     <motion.div
                       aria-hidden="true"
+                      initial={inicioPhase === 'united' ? {opacity: 0, scale: 0.65} : false}
                       animate={{
                         opacity:
                           inicioPhase === 'united'
@@ -745,16 +757,18 @@ export function SerenityFlow() {
                       transition={{
                         opacity: {
                           duration: inicioPhase === 'united' ? 4.5 : 0.45,
+                          delay: inicioPhase === 'united' ? 0.1 : 0,
                           repeat: inicioPhase === 'united' ? Infinity : 0,
                           ease: 'easeInOut',
                         },
                         scale: {
                           duration: inicioPhase === 'united' ? 4.5 : 0.45,
+                          delay: inicioPhase === 'united' ? 0.1 : 0,
                           repeat: inicioPhase === 'united' ? Infinity : 0,
                           ease: 'easeInOut',
                         },
                       }}
-                      className="pointer-events-none absolute -inset-10 rounded-full blur-3xl"
+                      className="pointer-events-none absolute -inset-10 rounded-full blur-3xl will-change-transform"
                       style={{
                         background:
                           'radial-gradient(circle, rgba(217,0,255,0.34) 0%, rgba(142,68,236,0.28) 42%, rgba(220,238,255,0.08) 68%, rgba(4,2,8,0) 80%)',
@@ -815,7 +829,7 @@ export function SerenityFlow() {
                             }}
                             className="origin-center will-change-transform"
                           >
-                            {/* Gentle orbital breathing + micro-tilt in 'icons' mode */}
+                            {/* Gentle serene levitation when united, orbital micro-tilt when icons */}
                             <motion.div
                               animate={
                                 inicioPhase === 'icons' && !isCurrentlyInOverlay
@@ -824,7 +838,13 @@ export function SerenityFlow() {
                                       y: [0, -3.5, 0],
                                       rotate: [0, tilt, 0],
                                     }
-                                  : {scale: 1, y: 0, rotate: 0}
+                                  : inicioPhase === 'united'
+                                    ? {
+                                        scale: 1,
+                                        y: [0, -3.5, 0],
+                                        rotate: 0,
+                                      }
+                                    : {scale: 1, y: 0, rotate: 0}
                               }
                               transition={
                                 inicioPhase === 'icons' && !isCurrentlyInOverlay
@@ -834,41 +854,70 @@ export function SerenityFlow() {
                                       repeat: Infinity,
                                       ease: 'easeInOut',
                                     }
-                                  : {duration: 0.25}
+                                  : inicioPhase === 'united'
+                                    ? {
+                                        y: {
+                                          duration: 5.0,
+                                          delay: 0.9,
+                                          repeat: Infinity,
+                                          ease: 'easeInOut',
+                                        },
+                                        scale: {duration: 0.25},
+                                        rotate: {duration: 0.25},
+                                      }
+                                    : {duration: 0.25}
                               }
                               className="will-change-transform"
                             >
                               {!isCurrentlyInOverlay ? (
-                                <motion.button
-                                  layoutId={inicioPhase === 'icons' ? `symbol-${el.id}` : undefined}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (inicioPhase === 'united') {
-                                      setInicioPhase('icons');
-                                    } else if (inicioPhase === 'icons') {
-                                      setHasInspectedIcon(true);
-                                      setSelectedElement(el);
-                                    }
-                                  }}
-                                  aria-label={
-                                    inicioPhase === 'icons'
-                                      ? `Ver significado de ${el.title}`
-                                      : el.title
+                                <motion.div
+                                  initial={
+                                    inicioPhase === 'united'
+                                      ? EMBLEM_UNVEIL_ENTRANCE[id].initial
+                                      : false
                                   }
-                                  transition={SMOOTH_TRANSITION}
-                                  className={`block w-full border-0 bg-transparent p-0 m-0 focus-visible:outline-2 focus-visible:outline-[#d900ff] ${
-                                    inicioPhase === 'blocks'
-                                      ? 'pointer-events-none'
-                                      : 'pointer-events-auto cursor-pointer active:scale-95'
-                                  }`}
+                                  animate={{opacity: 1, x: 0, y: 0, scale: 1}}
+                                  transition={{
+                                    duration: EMBLEM_UNVEIL_ENTRANCE[id].duration,
+                                    delay:
+                                      inicioPhase === 'united'
+                                        ? EMBLEM_UNVEIL_ENTRANCE[id].delay
+                                        : 0,
+                                    ease: LUXURY_EASE,
+                                  }}
+                                  className="will-change-transform"
                                 >
-                                  <ResilientEmblemImage
-                                    src={el.image}
-                                    alt={el.title}
-                                    className={`h-auto w-full object-contain ${LAYER_DROP_SHADOW[id]}`}
-                                  />
-                                </motion.button>
+                                  <motion.button
+                                    layoutId={inicioPhase === 'icons' ? `symbol-${el.id}` : undefined}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (inicioPhase === 'united') {
+                                        setInicioPhase('icons');
+                                      } else if (inicioPhase === 'icons') {
+                                        setHasInspectedIcon(true);
+                                        setSelectedElement(el);
+                                      }
+                                    }}
+                                    aria-label={
+                                      inicioPhase === 'icons'
+                                        ? `Ver significado de ${el.title}`
+                                        : el.title
+                                    }
+                                    transition={SMOOTH_TRANSITION}
+                                    className={`block w-full border-0 bg-transparent p-0 m-0 focus-visible:outline-2 focus-visible:outline-[#d900ff] ${
+                                      inicioPhase === 'blocks'
+                                        ? 'pointer-events-none'
+                                        : 'pointer-events-auto cursor-pointer active:scale-95'
+                                    }`}
+                                  >
+                                    <ResilientEmblemImage
+                                      src={el.image}
+                                      alt={el.title}
+                                      className={`h-auto w-full object-contain ${LAYER_DROP_SHADOW[id]}`}
+                                    />
+                                  </motion.button>
+                                </motion.div>
                               ) : (
                                 <div className="w-full aspect-square opacity-0" />
                               )}
@@ -885,10 +934,10 @@ export function SerenityFlow() {
                       {inicioPhase === 'united' ? (
                         <motion.p
                           key="slogan-united"
-                          initial={{opacity: 0, y: 6}}
+                          initial={{opacity: 0, y: 8}}
                           animate={{opacity: 1, y: 0}}
                           exit={{opacity: 0, y: -4}}
-                          transition={FADE_TRANSITION}
+                          transition={{duration: 0.55, delay: 0.56, ease: LUXURY_EASE}}
                           className="text-center font-serif text-lg italic tracking-[0.04em] text-[#e9e2f5] sm:text-xl"
                         >
                           {SERENITY_SLOGAN}

@@ -40,6 +40,8 @@ export function ResilientEmblemImage({
     <img
       src={src}
       alt={alt}
+      loading="eager"
+      decoding="sync"
       referrerPolicy="no-referrer"
       draggable={draggable}
       style={style}
