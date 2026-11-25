@@ -25,6 +25,8 @@ export const SERENITY_MOUNTAIN_IMAGE = assetUrl(
   'assets/aistudio/4_sin_t_tulo_20261125073828_39807995.png'
 );
 
+export const MIRROR_ICON = assetUrl('assets/aistudio/hugeicons-mirror-stroke_94efba10.svg');
+
 export const NAME_MEANING_CONTENT = {
   pronunciation: '/səˈrɛnɪti/',
   whyThisName:

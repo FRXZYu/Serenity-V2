@@ -13,6 +13,7 @@ import {
   GARMENT_DESIGNS,
   LEGACY_PROMO_CONTENT,
   LOGO_ALTERNATIVES,
+  MIRROR_ICON,
   MISSION_VISION_CONTENT,
   NAME_MEANING_CONTENT,
   SERENITY_SLOGAN,
@@ -605,12 +606,34 @@ export function SerenityFlow() {
                               ease: [0.19, 1, 0.22, 1],
                             }}
                             whileTap={{scale: 0.985}}
-                            className="relative overflow-hidden w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-6 py-7 text-center text-[15px] leading-relaxed text-[#cfc4e3] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:px-7 sm:py-8 sm:text-base [text-wrap:balance]"
+                            className="relative mt-5 w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-6 pb-7 pt-9 text-center text-[15px] leading-relaxed text-[#cfc4e3] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:px-7 sm:pb-8 sm:pt-10 sm:text-base [text-wrap:balance]"
                           >
+                            {/* Centered top-margin mirror icon medallion */}
+                            <motion.div
+                              initial={{opacity: 0, scale: 0.72, y: 6}}
+                              animate={{opacity: 1, scale: 1, y: 0}}
+                              transition={{duration: 0.55, delay: 0.16, ease: LUXURY_EASE}}
+                              className="absolute left-1/2 top-0 z-20 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#e5d9f8]/24 bg-[#0b0714] shadow-[0_0_24px_rgba(217,0,255,0.22),0_6px_18px_rgba(0,0,0,0.65)]"
+                            >
+                              <img
+                                src={MIRROR_ICON}
+                                alt=""
+                                aria-hidden="true"
+                                loading="eager"
+                                decoding="sync"
+                                className="h-5 w-5 brightness-0 invert opacity-90 drop-shadow-[0_0_8px_rgba(229,217,248,0.4)]"
+                              />
+                            </motion.div>
+
                             <div
                               aria-hidden="true"
-                              className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${HAIRLINE_GRADIENTS[idx % HAIRLINE_GRADIENTS.length]}`}
-                            />
+                              className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
+                            >
+                              <div
+                                className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${HAIRLINE_GRADIENTS[idx % HAIRLINE_GRADIENTS.length]}`}
+                              />
+                            </div>
+
                             {segments.map((seg, sIdx) =>
                               seg.bold ? (
                                 <strong key={sIdx} className="font-semibold text-[#f5f0fc]">
