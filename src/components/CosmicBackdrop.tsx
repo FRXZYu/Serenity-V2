@@ -26,6 +26,17 @@ interface Comet {
   tint: string;
 }
 
+interface DustMote {
+  x: number;
+  y: number;
+  radius: number;
+  alpha: number;
+  vy: number;
+  swayAmp: number;
+  swaySpeed: number;
+  phase: number;
+}
+
 const TINTS = ['#F5F0FC', '#DCEEFF', '#E2C4FF'] as const;
 
 function createGlowSprite(color: string, size = 32): HTMLCanvasElement {
@@ -64,6 +75,7 @@ export function CosmicBackdrop() {
     let height = 0;
     let stars: Star[] = [];
     let comets: Comet[] = [];
+    let motes: DustMote[] = [];
     let lastTime = performance.now();
     let nextCometIn = 1400;
 
@@ -129,6 +141,18 @@ export function CosmicBackdrop() {
           tintIndex: i % TINTS.length,
         };
       });
+
+      const moteCount = width < 768 ? 12 : 18;
+      motes = Array.from({length: moteCount}, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: 0.45 + Math.random() * 0.55,
+        alpha: 0.14 + Math.random() * 0.18,
+        vy: -(0.008 + Math.random() * 0.01),
+        swayAmp: 0.12 + Math.random() * 0.18,
+        swaySpeed: 0.0005 + Math.random() * 0.0007,
+        phase: Math.random() * Math.PI * 2,
+      }));
     };
 
     const drawFrame = (now: number) => {
@@ -237,6 +261,26 @@ export function CosmicBackdrop() {
         }
       }
 
+      // Quiet distant atmospheric dust motes for subtle depth
+      for (const mote of motes) {
+        if (!prefersReduced) {
+          mote.y += mote.vy * dt;
+          mote.x += Math.sin(mote.phase + now * mote.swaySpeed) * mote.swayAmp * (dt / 16);
+          if (mote.y < -8) {
+            mote.y = height + 8;
+            mote.x = Math.random() * width;
+          }
+        }
+        const breath = prefersReduced
+          ? 0.8
+          : 0.65 + 0.35 * Math.sin(mote.phase + now * 0.0012);
+        ctx.globalAlpha = mote.alpha * breath;
+        ctx.fillStyle = '#E8DCFA';
+        ctx.beginPath();
+        ctx.arc(mote.x, mote.y, mote.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.globalAlpha = 1;
       if (!prefersReduced) {
         animationFrameId = requestAnimationFrame(drawFrame);
@@ -280,6 +324,14 @@ export function CosmicBackdrop() {
             'radial-gradient(56% 46% at 80% 78%, rgba(142, 68, 236, 0.18) 0%, rgba(4, 2, 8, 0) 68%)',
             '#040208',
           ].join(', '),
+        }}
+      />
+      {/* Ultra-slow ambient horizon glow for organic sky depth */}
+      <div
+        className="absolute -bottom-1/4 left-1/2 h-[55vh] w-[120vw] -translate-x-1/2 rounded-full opacity-25 blur-3xl"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgba(118, 44, 194, 0.28) 0%, rgba(4, 2, 8, 0) 72%)',
         }}
       />
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />

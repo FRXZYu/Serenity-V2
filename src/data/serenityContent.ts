@@ -21,7 +21,9 @@ export const SERENITY_WORDMARK = assetUrl('assets/aistudio/serenity_logo_9895c4c
 
 export const SERENITY_SLOGAN = 'Find me in the future';
 
-export const SERENITY_MOUNTAIN_IMAGE = assetUrl('assets/aistudio/monta_a_serenity_70b526cb.png');
+export const SERENITY_MOUNTAIN_IMAGE = assetUrl(
+  'assets/aistudio/4_sin_t_tulo_20261125073828_39807995.png'
+);
 
 export const NAME_MEANING_CONTENT = {
   pronunciation: '/səˈrɛnɪti/',

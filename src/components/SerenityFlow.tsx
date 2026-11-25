@@ -297,7 +297,7 @@ export function SerenityFlow() {
       },
     };
 
-    const nameCardWordmarkY = Math.max(8, Math.min(44, viewport.h * 0.085 - wordmarkMetrics.top));
+    const nameCardWordmarkY = Math.max(4, Math.min(34, viewport.h * 0.068 - wordmarkMetrics.top));
     const introCenterWordmarkY = Math.max(
       0,
       viewport.h / 2 - (wordmarkMetrics.top + wordmarkMetrics.height / 2)
@@ -514,13 +514,16 @@ export function SerenityFlow() {
                   filter: 'blur(0px)',
                 }}
                 transition={{duration: 0.85, ease: LUXURY_EASE}}
-                className="relative flex origin-center items-center justify-center will-change-transform"
+                className="relative flex flex-col origin-center items-center justify-center will-change-transform"
               >
                 <ResilientEmblemImage
                   src={SERENITY_WORDMARK}
                   alt="Serenity"
                   className="h-auto w-[195px] object-contain drop-shadow-[0_0_24px_rgba(245,240,252,0.18)] sm:w-[220px]"
                 />
+                <span className="mt-1 text-[10px] font-medium tracking-[0.26em] text-[#b4a6cc]/75 uppercase sm:text-[10.5px]">
+                  Logo 14
+                </span>
               </motion.div>
             </div>
           </div>
@@ -650,12 +653,23 @@ export function SerenityFlow() {
                 className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
               >
                 <div className="flex flex-1 w-full flex-col items-center justify-center text-center">
-                  <div className="max-w-[340px] space-y-4 px-2">
+                  <div className="relative -mt-8 max-w-[340px] space-y-4 px-2 sm:-mt-10">
+                    {/* Quiet organic aura behind mission statement */}
+                    <motion.div
+                      aria-hidden="true"
+                      animate={{opacity: [0.22, 0.4, 0.22], scale: [0.96, 1.04, 0.96]}}
+                      transition={{duration: 6.5, repeat: Infinity, ease: 'easeInOut'}}
+                      className="pointer-events-none absolute -inset-x-10 -inset-y-8 rounded-full blur-3xl will-change-transform"
+                      style={{
+                        background:
+                          'radial-gradient(circle, rgba(217,0,255,0.16) 0%, rgba(142,68,236,0.1) 45%, rgba(4,2,8,0) 75%)',
+                      }}
+                    />
                     <motion.span
                       initial={{opacity: 0, y: 10}}
                       animate={{opacity: 1, y: 0}}
                       transition={{...SMOOTH_TRANSITION, delay: 0.05}}
-                      className="block text-xs font-medium tracking-[0.18em] text-[#d900ff] uppercase"
+                      className="relative block text-xs font-medium tracking-[0.18em] text-[#d900ff] uppercase"
                     >
                       {MISSION_VISION_CONTENT.mission.label}
                     </motion.span>
@@ -663,13 +677,13 @@ export function SerenityFlow() {
                       initial={{scaleX: 0, opacity: 0}}
                       animate={{scaleX: 1, opacity: 1}}
                       transition={{duration: 0.55, delay: 0.12, ease: LUXURY_EASE}}
-                      className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#d900ff]/55 to-transparent will-change-transform"
+                      className="relative mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#d900ff]/55 to-transparent will-change-transform"
                     />
                     <motion.p
                       initial={{opacity: 0, y: 14, scale: 0.97}}
                       animate={{opacity: 1, y: 0, scale: 1}}
                       transition={{...SMOOTH_TRANSITION, delay: 0.16}}
-                      className="font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
+                      className="relative font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
                     >
                       {MISSION_VISION_CONTENT.mission.text}
                     </motion.p>
@@ -691,12 +705,23 @@ export function SerenityFlow() {
                 className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
               >
                 <div className="flex flex-1 w-full flex-col items-center justify-center text-center">
-                  <div className="max-w-[340px] space-y-4 px-2">
+                  <div className="relative -mt-8 max-w-[340px] space-y-4 px-2 sm:-mt-10">
+                    {/* Quiet organic aura behind vision statement */}
+                    <motion.div
+                      aria-hidden="true"
+                      animate={{opacity: [0.2, 0.36, 0.2], scale: [0.96, 1.04, 0.96]}}
+                      transition={{duration: 6.5, repeat: Infinity, ease: 'easeInOut'}}
+                      className="pointer-events-none absolute -inset-x-10 -inset-y-8 rounded-full blur-3xl will-change-transform"
+                      style={{
+                        background:
+                          'radial-gradient(circle, rgba(220,238,255,0.14) 0%, rgba(142,68,236,0.12) 45%, rgba(4,2,8,0) 75%)',
+                      }}
+                    />
                     <motion.span
                       initial={{opacity: 0, y: 10}}
                       animate={{opacity: 1, y: 0}}
                       transition={{...SMOOTH_TRANSITION, delay: 0.05}}
-                      className="block text-xs font-medium tracking-[0.18em] text-[#dceeff] uppercase"
+                      className="relative block text-xs font-medium tracking-[0.18em] text-[#dceeff] uppercase"
                     >
                       {MISSION_VISION_CONTENT.vision.label}
                     </motion.span>
@@ -704,13 +729,13 @@ export function SerenityFlow() {
                       initial={{scaleX: 0, opacity: 0}}
                       animate={{scaleX: 1, opacity: 1}}
                       transition={{duration: 0.55, delay: 0.12, ease: LUXURY_EASE}}
-                      className="mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#dceeff]/55 to-transparent will-change-transform"
+                      className="relative mx-auto h-px w-16 bg-gradient-to-r from-transparent via-[#dceeff]/55 to-transparent will-change-transform"
                     />
                     <motion.p
                       initial={{opacity: 0, y: 14, scale: 0.97}}
                       animate={{opacity: 1, y: 0, scale: 1}}
                       transition={{...SMOOTH_TRANSITION, delay: 0.16}}
-                      className="font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
+                      className="relative font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
                     >
                       {MISSION_VISION_CONTENT.vision.text}
                     </motion.p>
@@ -1014,69 +1039,74 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-12 sm:pb-8 sm:pt-14"
+                className="flex flex-1 flex-col items-center justify-between pb-6 pt-14 sm:pb-8 sm:pt-16"
               >
                 <div className="flex flex-1 w-full flex-col items-center justify-center">
-                  {/* Single Unified Card: Meaning text takes center stage, subtle smaller infinite mountain below */}
+                  {/* Single Unified Card: Meaning text on top, full-width top-cropped summit art flush at bottom */}
                   <motion.div
                     initial={{opacity: 0, y: 16, scale: 0.97}}
                     animate={{opacity: 1, y: 0, scale: 1}}
                     transition={{...SMOOTH_TRANSITION, delay: 0.12}}
-                    className="relative w-full max-w-[390px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 p-5 pb-2 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform sm:p-6 sm:pb-2.5"
+                    className="relative w-full max-w-[390px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 pt-5 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform sm:pt-6"
                   >
-                    {/* Header: Significado label & pronunciation */}
-                    <div className="relative flex items-center justify-between gap-3 pb-2.5">
-                      <span className="text-[11px] font-semibold tracking-[0.16em] text-[#b8a7d6] uppercase">
-                        Significado
-                      </span>
-                      <span className="font-serif text-lg font-medium tracking-wide text-[#f5f0fc]">
-                        {NAME_MEANING_CONTENT.pronunciation}
-                      </span>
-                      <motion.div
-                        aria-hidden="true"
-                        initial={{scaleX: 0}}
-                        animate={{scaleX: 1}}
-                        transition={{duration: 0.65, delay: 0.28, ease: LUXURY_EASE}}
-                        className="absolute inset-x-0 bottom-0 h-px origin-center bg-gradient-to-r from-transparent via-[#e5d9f8]/24 to-transparent"
-                      />
-                    </div>
+                    {/* Subtle top border light catch */}
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e5d9f8]/30 to-transparent"
+                    />
 
-                    {/* Meaning Statement Text (primary visual focus) */}
-                    <motion.div
-                      initial={{opacity: 0, y: 8}}
-                      animate={{opacity: 1, y: 0}}
-                      transition={{duration: 0.5, delay: 0.3, ease: LUXURY_EASE}}
-                      className="mt-3.5 space-y-2.5 text-center"
-                    >
-                      <p className="text-[14.5px] leading-relaxed text-[#f0eafb] sm:text-[15px] font-normal">
-                        {NAME_MEANING_CONTENT.whyThisName}
-                      </p>
-                      <p className="text-[13.5px] leading-relaxed text-[#d7cce9] sm:text-[14px] font-normal">
-                        {NAME_MEANING_CONTENT.extraMeaning}
-                      </p>
-                    </motion.div>
-
-                    {/* Compact transparent Mountain PNG accent below: no borders, no respiration, infinite fade */}
-                    <div className="relative -mb-1 mt-3 flex items-center justify-center overflow-hidden">
-                      <motion.div
-                        initial={{opacity: 0, filter: 'blur(12px)', y: 8}}
-                        animate={{opacity: 0.86, filter: 'blur(0px)', y: 0}}
-                        transition={{duration: 0.85, delay: 0.38, ease: LUXURY_EASE}}
-                        className="relative w-full max-w-[165px] sm:max-w-[185px]"
-                        style={{
-                          maskImage:
-                            'radial-gradient(ellipse 92% 86% at 50% 38%, black 50%, transparent 97%)',
-                          WebkitMaskImage:
-                            'radial-gradient(ellipse 92% 86% at 50% 38%, black 50%, transparent 97%)',
-                        }}
-                      >
-                        <ResilientEmblemImage
-                          src={NAME_MEANING_CONTENT.image}
-                          alt="Serenity — Montaña infinita"
-                          className="pointer-events-none block h-auto w-full object-contain"
+                    <div className="px-5 sm:px-6">
+                      {/* Header: Significado label & pronunciation */}
+                      <div className="relative flex items-center justify-between gap-3 pb-2.5">
+                        <span className="text-[11px] font-semibold tracking-[0.16em] text-[#b8a7d6] uppercase">
+                          Significado
+                        </span>
+                        <span className="font-serif text-lg font-medium tracking-wide text-[#f5f0fc]">
+                          {NAME_MEANING_CONTENT.pronunciation}
+                        </span>
+                        <motion.div
+                          aria-hidden="true"
+                          initial={{scaleX: 0}}
+                          animate={{scaleX: 1}}
+                          transition={{duration: 0.65, delay: 0.28, ease: LUXURY_EASE}}
+                          className="absolute inset-x-0 bottom-0 h-px origin-center bg-gradient-to-r from-transparent via-[#e5d9f8]/24 to-transparent"
                         />
+                      </div>
+
+                      {/* Meaning Statement Text (primary visual focus) */}
+                      <motion.div
+                        initial={{opacity: 0, y: 8}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{duration: 0.5, delay: 0.3, ease: LUXURY_EASE}}
+                        className="mt-3.5 space-y-2.5 text-center"
+                      >
+                        <p className="text-[14.5px] leading-relaxed text-[#f0eafb] sm:text-[15px] font-normal">
+                          {NAME_MEANING_CONTENT.whyThisName}
+                        </p>
+                        <p className="text-[13.5px] leading-relaxed text-[#d7cce9] sm:text-[14px] font-normal">
+                          {NAME_MEANING_CONTENT.extraMeaning}
+                        </p>
                       </motion.div>
                     </div>
+
+                    {/* Full-width compact cropped mountain summit image: zero stretching, top summit figure always preserved */}
+                    <motion.div
+                      initial={{opacity: 0, filter: 'blur(12px)'}}
+                      animate={{opacity: 1, filter: 'blur(0px)'}}
+                      transition={{duration: 0.85, delay: 0.36, ease: LUXURY_EASE}}
+                      className="relative mt-4 h-[138px] w-full overflow-hidden sm:h-[156px]"
+                    >
+                      <ResilientEmblemImage
+                        src={NAME_MEANING_CONTENT.image}
+                        alt="Serenity — Cima de la montaña"
+                        className="pointer-events-none block h-full w-full object-cover object-[50%_18%]"
+                      />
+                      {/* Smooth top melt so purple sky integrates cleanly into obsidian card */}
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[#0b0714] via-[#0b0714]/55 to-transparent"
+                      />
+                    </motion.div>
                   </motion.div>
                 </div>
 
