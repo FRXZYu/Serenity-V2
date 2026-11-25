@@ -217,10 +217,20 @@ export function SerenityFlow() {
   });
 
   useEffect(() => {
-    const update = () => setViewport({w: window.innerWidth, h: window.innerHeight});
+    const update = () => {
+      const w = window.innerWidth;
+      const h = Math.round(window.visualViewport?.height ?? window.innerHeight);
+      setViewport({w, h});
+    };
     update();
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    window.visualViewport?.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+      window.visualViewport?.removeEventListener('resize', update);
+    };
   }, []);
 
   const paginateAlternatives = useCallback((direction: number) => {
@@ -257,13 +267,25 @@ export function SerenityFlow() {
   }, [selectedElement, showAlternatives, showGarments, paginateAlternatives, paginateGarments]);
 
   const geometry = useMemo(() => {
+    const isNarrowW = viewport.w < 370;
+    const isShortH = viewport.h < 690;
     const effectiveW = Math.min(viewport.w, 430);
-    const emblemW = Math.min(effectiveW * 0.5, viewport.h * 0.255, 200);
+    const emblemW = Math.max(
+      118,
+      Math.min(effectiveW * 0.48, viewport.h * 0.245, 200)
+    );
     const emblemH = emblemW * (1419 / 1097);
 
-    const spreadX = Math.min(effectiveW * 0.23, 94);
-    const spreadYTop = Math.min(viewport.h * 0.13, 98);
-    const spreadYBottom = Math.min(viewport.h * 0.12, 90);
+    // Ending screen stacks slogan + 2 buttons + credits below emblem, so scale slightly tighter on short phones
+    const endingEmblemW = Math.max(
+      106,
+      Math.min(emblemW, viewport.h * (isShortH ? 0.2 : 0.235))
+    );
+    const endingEmblemH = endingEmblemW * (1419 / 1097);
+
+    const spreadX = Math.min(effectiveW * 0.225, 94);
+    const spreadYTop = Math.max(54, Math.min(viewport.h * 0.125, 96));
+    const spreadYBottom = Math.max(50, Math.min(viewport.h * 0.115, 88));
 
     const initCenters: Record<SerenitySymbolId, {cx: number; cy: number}> = {
       cometa: {cx: -0.23 * emblemW, cy: -0.33 * emblemH},
@@ -298,23 +320,46 @@ export function SerenityFlow() {
       },
     };
 
-    const nameCardWordmarkY = Math.max(4, Math.min(34, viewport.h * 0.068 - wordmarkMetrics.top));
+    const nameCardWordmarkY = isShortH
+      ? 6
+      : Math.max(8, Math.min(24, Math.round(viewport.h * 0.025)));
+    const maxSafeIntroY = Math.max(
+      8,
+      viewport.h - 148 - (wordmarkMetrics.top + wordmarkMetrics.height)
+    );
     const introCenterWordmarkY = Math.max(
       0,
-      viewport.h / 2 - (wordmarkMetrics.top + wordmarkMetrics.height / 2)
+      Math.min(
+        viewport.h / 2 - (wordmarkMetrics.top + wordmarkMetrics.height / 2),
+        maxSafeIntroY
+      )
     );
 
-    return {emblemW, emblemH, iconDeltas, nameCardWordmarkY, introCenterWordmarkY};
+    return {
+      isNarrowW,
+      isShortH,
+      emblemW,
+      emblemH,
+      endingEmblemW,
+      endingEmblemH,
+      iconDeltas,
+      nameCardWordmarkY,
+      introCenterWordmarkY,
+    };
   }, [viewport, wordmarkMetrics]);
 
   // Measure exact un-transformed coordinates from each emblem piece to its block's left icon slot
   useLayoutEffect(() => {
     const wm = wordmarkRef.current;
     if (wm) {
-      setWordmarkMetrics({
-        top: wm.offsetTop || 40,
-        height: wm.offsetHeight || 64,
-      });
+      const parentTop = wm.parentElement?.offsetTop ?? 0;
+      const nextTop = parentTop + wm.offsetTop || 28;
+      const nextHeight = wm.offsetHeight || 64;
+      setWordmarkMetrics((prev) =>
+        prev.top === nextTop && prev.height === nextHeight
+          ? prev
+          : {top: nextTop, height: nextHeight}
+      );
     }
 
     if (step !== 'emblema') return;
@@ -451,7 +496,15 @@ export function SerenityFlow() {
     : step === 'nombre'
       ? geometry.nameCardWordmarkY
       : 0;
-  const wordmarkTargetScale = isCentered ? 1.25 : step === 'nombre' ? 1.1 : 1;
+  const wordmarkTargetScale = isCentered
+    ? geometry.isNarrowW
+      ? 1.16
+      : 1.25
+    : step === 'nombre'
+      ? geometry.isNarrowW
+        ? 1.04
+        : 1.1
+      : 1;
 
   const currentAlternative = LOGO_ALTERNATIVES[altIndex];
   const currentGarment = GARMENT_DESIGNS[garmentIndex];
@@ -459,10 +512,10 @@ export function SerenityFlow() {
   return (
     <MotionConfig reducedMotion="user">
       <LayoutGroup>
-        <main className="relative z-10 mx-auto flex h-[100dvh] w-full max-w-[440px] flex-col items-center overflow-hidden px-5 pt-safe pb-safe">
+        <main className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-[440px] flex-col items-center overflow-x-clip px-4 min-[375px]:px-5 pt-safe pb-safe">
           {/* Subtle quiet back chevron */}
           {step !== 'portada' ? (
-            <div className="absolute left-3 top-3 z-30 pt-safe">
+            <div className="absolute left-2 top-2.5 z-30 min-[375px]:left-3 min-[375px]:top-3 pt-safe">
               <button
                 type="button"
                 onClick={handleBack}
@@ -475,7 +528,7 @@ export function SerenityFlow() {
           ) : null}
 
           {/* PERSISTENT SERENITY WORDMARK (Starts centered with blur on portada, then glides to resting top) */}
-          <div className="relative z-20 shrink-0 pt-5 sm:pt-7">
+          <div className="relative z-20 shrink-0 pt-3 min-[375px]:pt-4 sm:pt-6">
             <div ref={wordmarkRef} className="relative">
               {/* Soft breathing halo behind wordmark exclusively on portada */}
               <motion.div
@@ -505,7 +558,7 @@ export function SerenityFlow() {
                 initial={{
                   opacity: 0,
                   y: geometry.introCenterWordmarkY,
-                  scale: 1.25,
+                  scale: geometry.isNarrowW ? 1.16 : 1.25,
                   filter: 'blur(16px)',
                 }}
                 animate={{
@@ -520,9 +573,9 @@ export function SerenityFlow() {
                 <ResilientEmblemImage
                   src={SERENITY_WORDMARK}
                   alt="Serenity"
-                  className="h-auto w-[195px] object-contain drop-shadow-[0_0_24px_rgba(245,240,252,0.18)] sm:w-[220px]"
+                  className="h-auto w-[166px] min-[375px]:w-[190px] sm:w-[215px] object-contain drop-shadow-[0_0_24px_rgba(245,240,252,0.18)]"
                 />
-                <span className="mt-1 text-[10px] font-medium tracking-[0.26em] text-[#b4a6cc]/75 uppercase sm:text-[10.5px]">
+                <span className="mt-1 text-[9.5px] font-medium tracking-[0.26em] text-[#b4a6cc]/75 uppercase min-[375px]:text-[10px] sm:text-[10.5px]">
                   Logo 14
                 </span>
               </motion.div>
@@ -530,7 +583,7 @@ export function SerenityFlow() {
           </div>
 
           {/* SCREEN CONTENT STAGE */}
-          <div className="relative flex flex-1 w-full flex-col overflow-hidden">
+          <div className="relative flex flex-1 w-full flex-col overflow-x-clip">
             <AnimatePresence mode="wait">
               {/* ==================== 0. PORTADA (LOGO IN CENTER WITH BLUR + CONTINUAR) ==================== */}
               {step === 'portada' && (
@@ -540,7 +593,7 @@ export function SerenityFlow() {
                   animate={{opacity: 1}}
                   exit={{opacity: 0}}
                   transition={FADE_TRANSITION}
-                  className="flex flex-1 flex-col items-center justify-end pb-7 pt-2 sm:pb-9"
+                  className="flex flex-1 flex-col items-center justify-end pb-5 pt-2 min-[375px]:pb-7 sm:pb-9"
                 >
                   <div className="flex-1" />
                   <ContinueButton onClick={() => goToStep('inolvidable')} delay={0.32} />
@@ -554,9 +607,9 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between overflow-hidden pb-6 pt-2 sm:pb-8"
+                className="flex flex-1 flex-col items-center justify-between gap-4 pb-5 pt-2 min-[375px]:pb-6 sm:pb-8"
               >
-                <div className="flex flex-1 w-full flex-col items-center justify-center px-0.5">
+                <div className="flex flex-1 w-full flex-col items-center justify-center py-2">
                   <AnimatePresence mode="wait">
                     {!showStatements ? (
                       <motion.div
@@ -570,12 +623,12 @@ export function SerenityFlow() {
                           transition: {duration: 0.3, ease: LUXURY_EASE},
                         }}
                         transition={SMOOTH_TRANSITION}
-                        className="w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 text-center backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:p-7"
+                        className="w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-5 text-center backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform min-[375px]:p-6 sm:p-7"
                       >
-                        <h2 className="font-serif text-2xl font-semibold leading-tight text-[#f5f0fc] sm:text-3xl [text-wrap:balance]">
+                        <h2 className="font-serif text-[22px] font-semibold leading-tight text-[#f5f0fc] min-[375px]:text-2xl sm:text-3xl [text-wrap:balance]">
                           {UNFORGETTABLE_CONTENT.question}
                         </h2>
-                        <p className="mt-3.5 text-sm leading-relaxed text-[#cfc4e3] sm:text-[15px]">
+                        <p className="mt-3 text-[13.5px] leading-relaxed text-[#cfc4e3] min-[375px]:mt-3.5 min-[375px]:text-sm sm:text-[15px]">
                           {UNFORGETTABLE_CONTENT.answer}
                         </p>
                       </motion.div>
@@ -606,14 +659,14 @@ export function SerenityFlow() {
                               ease: [0.19, 1, 0.22, 1],
                             }}
                             whileTap={{scale: 0.985}}
-                            className="relative mt-5 w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-6 pb-7 pt-9 text-center text-[15px] leading-relaxed text-[#cfc4e3] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:px-7 sm:pb-8 sm:pt-10 sm:text-base [text-wrap:balance]"
+                            className="relative mt-5 w-full rounded-3xl border border-[#e5d9f8]/16 bg-[#0b0714]/85 px-5 pb-6 pt-8 text-center text-[14px] leading-relaxed text-[#cfc4e3] backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform min-[375px]:px-6 min-[375px]:pb-7 min-[375px]:pt-9 min-[375px]:text-[15px] sm:px-7 sm:pb-8 sm:pt-10 sm:text-base [text-wrap:balance]"
                           >
                             {/* Centered top-margin mirror icon medallion */}
                             <motion.div
                               initial={{opacity: 0, scale: 0.72, y: 6}}
                               animate={{opacity: 1, scale: 1, y: 0}}
                               transition={{duration: 0.55, delay: 0.16, ease: LUXURY_EASE}}
-                              className="absolute left-1/2 top-0 z-20 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#e5d9f8]/24 bg-[#0b0714] shadow-[0_0_24px_rgba(217,0,255,0.22),0_6px_18px_rgba(0,0,0,0.65)]"
+                              className="absolute left-1/2 top-0 z-20 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#e5d9f8]/24 bg-[#0b0714] shadow-[0_0_24px_rgba(217,0,255,0.22),0_6px_18px_rgba(0,0,0,0.65)] min-[375px]:h-11 min-[375px]:w-11"
                             >
                               <img
                                 src={MIRROR_ICON}
@@ -621,7 +674,7 @@ export function SerenityFlow() {
                                 aria-hidden="true"
                                 loading="eager"
                                 decoding="sync"
-                                className="h-5 w-5 brightness-0 invert opacity-90 drop-shadow-[0_0_8px_rgba(229,217,248,0.4)]"
+                                className="h-[18px] w-[18px] brightness-0 invert opacity-90 drop-shadow-[0_0_8px_rgba(229,217,248,0.4)] min-[375px]:h-5 min-[375px]:w-5"
                               />
                             </motion.div>
 
@@ -650,7 +703,7 @@ export function SerenityFlow() {
                   </AnimatePresence>
                 </div>
 
-                <div className="flex w-full justify-center pt-3">
+                <div className="flex w-full justify-center pt-1">
                   <ContinueButton
                     delay={showStatements ? 0.12 : 0.22}
                     onClick={() => {
@@ -673,10 +726,10 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+                className="flex flex-1 flex-col items-center justify-between gap-4 pb-5 pt-2 min-[375px]:pb-6 sm:pb-8"
               >
-                <div className="flex flex-1 w-full flex-col items-center justify-center text-center">
-                  <div className="relative -mt-8 max-w-[340px] space-y-4 px-2 sm:-mt-10">
+                <div className="flex flex-1 w-full flex-col items-center justify-center py-2 text-center">
+                  <div className="relative -mt-3 max-w-[340px] space-y-3.5 px-2 min-[375px]:-mt-6 min-[375px]:space-y-4 sm:-mt-10">
                     {/* Quiet organic aura behind mission statement */}
                     <motion.div
                       aria-hidden="true"
@@ -706,7 +759,7 @@ export function SerenityFlow() {
                       initial={{opacity: 0, y: 14, scale: 0.97}}
                       animate={{opacity: 1, y: 0, scale: 1}}
                       transition={{...SMOOTH_TRANSITION, delay: 0.16}}
-                      className="relative font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
+                      className="relative font-serif text-[26px] font-medium leading-snug text-[#f5f0fc] min-[375px]:text-3xl sm:text-4xl [text-wrap:balance]"
                     >
                       {MISSION_VISION_CONTENT.mission.text}
                     </motion.p>
@@ -725,10 +778,10 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+                className="flex flex-1 flex-col items-center justify-between gap-4 pb-5 pt-2 min-[375px]:pb-6 sm:pb-8"
               >
-                <div className="flex flex-1 w-full flex-col items-center justify-center text-center">
-                  <div className="relative -mt-8 max-w-[340px] space-y-4 px-2 sm:-mt-10">
+                <div className="flex flex-1 w-full flex-col items-center justify-center py-2 text-center">
+                  <div className="relative -mt-3 max-w-[340px] space-y-3.5 px-2 min-[375px]:-mt-6 min-[375px]:space-y-4 sm:-mt-10">
                     {/* Quiet organic aura behind vision statement */}
                     <motion.div
                       aria-hidden="true"
@@ -758,7 +811,7 @@ export function SerenityFlow() {
                       initial={{opacity: 0, y: 14, scale: 0.97}}
                       animate={{opacity: 1, y: 0, scale: 1}}
                       transition={{...SMOOTH_TRANSITION, delay: 0.16}}
-                      className="relative font-serif text-3xl font-medium leading-snug text-[#f5f0fc] sm:text-4xl [text-wrap:balance]"
+                      className="relative font-serif text-[26px] font-medium leading-snug text-[#f5f0fc] min-[375px]:text-3xl sm:text-4xl [text-wrap:balance]"
                     >
                       {MISSION_VISION_CONTENT.vision.text}
                     </motion.p>
@@ -777,12 +830,16 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="relative flex flex-1 flex-col items-center justify-between pb-5 pt-2 sm:pb-7"
+                className="relative flex flex-1 flex-col items-center justify-between gap-3 pb-5 pt-2 sm:pb-7"
               >
-                <div className="relative flex flex-1 w-full flex-col items-center justify-center">
+                <div
+                  className={`relative flex flex-1 w-full flex-col items-center justify-center ${
+                    inicioPhase === 'blocks' ? 'min-h-[305px] min-[375px]:min-h-[335px]' : 'min-h-[240px]'
+                  }`}
+                >
                   {/* 4 HORIZONTAL RECTANGLE BLOCKS LAYER (slots measured continuously; revealed AFTER icons land) */}
                   <div
-                    className={`absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 sm:gap-3 ${
+                    className={`absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col gap-2 min-[375px]:gap-2.5 sm:gap-3 ${
                       inicioPhase === 'blocks' ? 'pointer-events-auto' : 'pointer-events-none'
                     }`}
                   >
@@ -796,14 +853,14 @@ export function SerenityFlow() {
                           delay: inicioPhase === 'blocks' ? 0.36 + idx * 0.06 : 0,
                           ease: LUXURY_EASE,
                         }}
-                        className="flex w-full items-center gap-3.5 rounded-2xl border border-[#e5d9f8]/14 bg-[#0b0714]/80 px-3.5 py-2.5 backdrop-blur-xl sm:gap-4 sm:px-4 sm:py-3"
+                        className="flex w-full items-center gap-3 rounded-2xl border border-[#e5d9f8]/14 bg-[#0b0714]/80 px-3 py-2 backdrop-blur-xl min-[375px]:gap-3.5 min-[375px]:px-3.5 min-[375px]:py-2.5 sm:gap-4 sm:px-4 sm:py-3"
                       >
                         {/* Left Icon Landing Slot (always measured in layout, stays empty so persistent icon sits right inside) */}
                         <div
                           ref={(node) => {
                             slotRefs.current[el.id] = node;
                           }}
-                          className="h-12 w-12 shrink-0 sm:h-13 sm:w-13"
+                          className="h-10 w-10 shrink-0 min-[375px]:h-12 min-[375px]:w-12 sm:h-13 sm:w-13"
                         />
 
                         {/* Text appears smoothly beside the icon after icon arrives */}
@@ -821,10 +878,10 @@ export function SerenityFlow() {
                           }}
                           className="min-w-0 flex-1 text-left"
                         >
-                          <h2 className="font-serif text-base font-semibold leading-tight text-[#f5f0fc] sm:text-lg">
+                          <h2 className="font-serif text-[15px] font-semibold leading-tight text-[#f5f0fc] min-[375px]:text-base sm:text-lg">
                             {el.title}
                           </h2>
-                          <p className="mt-0.5 text-[11.5px] leading-snug text-[#cfc4e3] sm:text-xs">
+                          <p className="mt-0.5 text-[11px] leading-snug text-[#cfc4e3] min-[375px]:text-[11.5px] sm:text-xs">
                             {el.shortMeaning}
                           </p>
                         </motion.div>
@@ -1062,7 +1119,8 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-14 sm:pb-8 sm:pt-16"
+                style={{paddingTop: `${geometry.nameCardWordmarkY + 14}px`}}
+                className="flex flex-1 flex-col items-center justify-between gap-4 pb-5 min-[375px]:pb-6 sm:pb-8"
               >
                 <div className="flex flex-1 w-full flex-col items-center justify-center">
                   {/* Single Unified Card: Meaning text on top, full-width top-cropped summit art flush at bottom */}
@@ -1070,7 +1128,7 @@ export function SerenityFlow() {
                     initial={{opacity: 0, y: 16, scale: 0.97}}
                     animate={{opacity: 1, y: 0, scale: 1}}
                     transition={{...SMOOTH_TRANSITION, delay: 0.12}}
-                    className="relative w-full max-w-[390px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 pt-5 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform sm:pt-6"
+                    className="relative w-full max-w-[390px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 pt-4 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform min-[375px]:pt-5 sm:pt-6"
                   >
                     {/* Subtle top border light catch */}
                     <div
@@ -1078,13 +1136,13 @@ export function SerenityFlow() {
                       className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e5d9f8]/30 to-transparent"
                     />
 
-                    <div className="px-5 sm:px-6">
+                    <div className="px-4 min-[375px]:px-5 sm:px-6">
                       {/* Header: Significado label & pronunciation */}
-                      <div className="relative flex items-center justify-between gap-3 pb-2.5">
-                        <span className="text-[11px] font-semibold tracking-[0.16em] text-[#b8a7d6] uppercase">
+                      <div className="relative flex items-center justify-between gap-3 pb-2 min-[375px]:pb-2.5">
+                        <span className="text-[10.5px] font-semibold tracking-[0.16em] text-[#b8a7d6] uppercase min-[375px]:text-[11px]">
                           Significado
                         </span>
-                        <span className="font-serif text-lg font-medium tracking-wide text-[#f5f0fc]">
+                        <span className="font-serif text-base font-medium tracking-wide text-[#f5f0fc] min-[375px]:text-lg">
                           {NAME_MEANING_CONTENT.pronunciation}
                         </span>
                         <motion.div
@@ -1101,12 +1159,12 @@ export function SerenityFlow() {
                         initial={{opacity: 0, y: 8}}
                         animate={{opacity: 1, y: 0}}
                         transition={{duration: 0.5, delay: 0.3, ease: LUXURY_EASE}}
-                        className="mt-3.5 space-y-2.5 text-center"
+                        className="mt-3 space-y-2 text-center min-[375px]:mt-3.5 min-[375px]:space-y-2.5"
                       >
-                        <p className="text-[14.5px] leading-relaxed text-[#f0eafb] sm:text-[15px] font-normal">
+                        <p className="text-[13.5px] leading-relaxed text-[#f0eafb] min-[375px]:text-[14.5px] sm:text-[15px] font-normal">
                           {NAME_MEANING_CONTENT.whyThisName}
                         </p>
-                        <p className="text-[13.5px] leading-relaxed text-[#d7cce9] sm:text-[14px] font-normal">
+                        <p className="text-[12.5px] leading-relaxed text-[#d7cce9] min-[375px]:text-[13.5px] sm:text-[14px] font-normal">
                           {NAME_MEANING_CONTENT.extraMeaning}
                         </p>
                       </motion.div>
@@ -1117,7 +1175,7 @@ export function SerenityFlow() {
                       initial={{opacity: 0, filter: 'blur(12px)'}}
                       animate={{opacity: 1, filter: 'blur(0px)'}}
                       transition={{duration: 0.85, delay: 0.36, ease: LUXURY_EASE}}
-                      className="relative mt-4 h-[138px] w-full overflow-hidden sm:h-[156px]"
+                      className="relative mt-3.5 h-[clamp(108px,18dvh,154px)] w-full overflow-hidden min-[375px]:mt-4"
                     >
                       <ResilientEmblemImage
                         src={NAME_MEANING_CONTENT.image}
@@ -1145,14 +1203,14 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+                className="flex flex-1 flex-col items-center justify-between gap-4 pb-5 pt-2 min-[375px]:pb-6 sm:pb-8"
               >
-                <div className="flex flex-1 w-full flex-col items-center justify-center">
+                <div className="flex flex-1 w-full flex-col items-center justify-center py-1">
                   <motion.div
                     initial={{opacity: 0, y: 18, scale: 0.97}}
                     animate={{opacity: 1, y: 0, scale: 1}}
                     transition={{...SMOOTH_TRANSITION, delay: 0.1}}
-                    className="relative w-full max-w-[395px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 p-5 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform sm:p-6"
+                    className="relative w-full max-w-[395px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 p-4 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform min-[375px]:p-5 sm:p-6"
                   >
                     {/* Subtle cosmic top edge highlight */}
                     <motion.div
@@ -1160,10 +1218,10 @@ export function SerenityFlow() {
                       initial={{scaleX: 0, opacity: 0}}
                       animate={{scaleX: 1, opacity: 1}}
                       transition={{duration: 0.8, delay: 0.2, ease: LUXURY_EASE}}
-                      className="mx-auto mb-4 h-px w-24 origin-center bg-gradient-to-r from-transparent via-[#d900ff]/65 to-transparent"
+                      className="mx-auto mb-3.5 h-px w-24 origin-center bg-gradient-to-r from-transparent via-[#d900ff]/65 to-transparent min-[375px]:mb-4"
                     />
 
-                    <div className="space-y-4 text-center">
+                    <div className="space-y-3 text-center min-[375px]:space-y-4">
                       {LEGACY_PROMO_CONTENT.paragraphs.map((paragraph, pIdx) => (
                         <motion.p
                           key={pIdx}
@@ -1174,7 +1232,7 @@ export function SerenityFlow() {
                             delay: 0.18 + pIdx * 0.14,
                             ease: LUXURY_EASE,
                           }}
-                          className="text-[13.5px] leading-relaxed text-[#cfc4e3] sm:text-[14.5px] [text-wrap:pretty]"
+                          className="text-[12.5px] leading-relaxed text-[#cfc4e3] min-[375px]:text-[13.5px] sm:text-[14.5px] [text-wrap:pretty]"
                         >
                           {paragraph.map((seg, sIdx) =>
                             seg.bold ? (
@@ -1194,7 +1252,7 @@ export function SerenityFlow() {
                       initial={{scaleX: 0, opacity: 0}}
                       animate={{scaleX: 1, opacity: 1}}
                       transition={{duration: 0.8, delay: 0.38, ease: LUXURY_EASE}}
-                      className="mx-auto mt-4 h-px w-16 origin-center bg-gradient-to-r from-transparent via-[#e5d9f8]/30 to-transparent"
+                      className="mx-auto mt-3.5 h-px w-16 origin-center bg-gradient-to-r from-transparent via-[#e5d9f8]/30 to-transparent min-[375px]:mt-4"
                     />
                   </motion.div>
                 </div>
@@ -1211,13 +1269,13 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+                className="flex flex-1 flex-col items-center justify-between gap-3 pb-4 pt-2 min-[375px]:pb-6 sm:pb-8"
               >
                 <div className="flex flex-1 flex-col items-center justify-center">
                   <div
                     style={{
-                      width: `${geometry.emblemW}px`,
-                      height: `${geometry.emblemH}px`,
+                      width: `${geometry.endingEmblemW}px`,
+                      height: `${geometry.endingEmblemH}px`,
                     }}
                     className="relative"
                   >
@@ -1295,15 +1353,15 @@ export function SerenityFlow() {
                     initial={{opacity: 0, y: 8}}
                     animate={{opacity: 1, y: 0}}
                     transition={{duration: 0.65, delay: 1.15, ease: LUXURY_EASE}}
-                    className="mt-5 text-center font-serif text-lg italic tracking-[0.04em] text-[#e9e2f5] sm:text-xl"
+                    className="mt-3 text-center font-serif text-base italic tracking-[0.04em] text-[#e9e2f5] min-[375px]:mt-4 min-[375px]:text-lg sm:mt-5 sm:text-xl"
                   >
                     {SERENITY_SLOGAN}
                   </motion.p>
                 </div>
 
                 {/* Action CTAs + Credits at the very bottom */}
-                <div className="flex w-full flex-col items-center gap-3 pb-1">
-                  <div className="flex w-full max-w-[270px] flex-col items-center gap-2.5">
+                <div className="flex w-full flex-col items-center gap-2.5 pb-0.5 min-[375px]:gap-3">
+                  <div className="flex w-full max-w-[270px] flex-col items-center gap-2 min-[375px]:gap-2.5">
                     <motion.button
                       type="button"
                       onClick={() => {
@@ -1347,7 +1405,7 @@ export function SerenityFlow() {
                     initial={{opacity: 0, y: 8}}
                     animate={{opacity: 1, y: 0}}
                     transition={{duration: 0.6, delay: 1.56, ease: LUXURY_EASE}}
-                    className="space-y-0.5 text-center text-[11px] leading-relaxed text-[#82739e]"
+                    className="space-y-0.5 text-center text-[10.5px] leading-relaxed text-[#82739e] min-[375px]:text-[11px]"
                   >
                     {CREDITS_LIST.map((credit) => (
                       <p key={credit.role}>
@@ -1374,26 +1432,26 @@ export function SerenityFlow() {
               exit={{opacity: 0}}
               transition={{duration: 0.3, ease: LUXURY_EASE}}
               onClick={() => setSelectedElement(null)}
-              className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#040208]/72 px-7 backdrop-blur-2xl"
+              className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden bg-[#040208]/72 px-6 py-8 backdrop-blur-2xl pt-safe pb-safe"
             >
               <button
                 type="button"
                 onClick={() => setSelectedElement(null)}
                 aria-label="Cerrar"
-                className="absolute right-4 top-4 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-[#b4a6cc] transition-colors hover:text-[#f5f0fc] focus-visible:outline-2 focus-visible:outline-[#d900ff] pt-safe"
+                className="fixed right-3 top-3 z-10 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-[#b4a6cc] transition-colors hover:text-[#f5f0fc] focus-visible:outline-2 focus-visible:outline-[#d900ff] min-[375px]:right-4 min-[375px]:top-4 pt-safe"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
 
-              <div className="flex max-w-[310px] flex-col items-center text-center">
-                <div className="relative flex h-[170px] w-[170px] items-center justify-center">
+              <div className="my-auto flex max-w-[310px] flex-col items-center text-center">
+                <div className="relative flex h-[min(44vw,24dvh,170px)] w-[min(44vw,24dvh,170px)] items-center justify-center">
                   <motion.div
                     aria-hidden="true"
                     initial={{opacity: 0, scale: 0.7}}
                     animate={{opacity: 1, scale: 1}}
                     exit={{opacity: 0, scale: 0.8}}
                     transition={SMOOTH_TRANSITION}
-                    className="pointer-events-none absolute h-44 w-44 rounded-full blur-3xl"
+                    className="pointer-events-none absolute h-40 w-40 rounded-full blur-3xl sm:h-44 sm:w-44"
                     style={{
                       background: `radial-gradient(circle, ${selectedElement.glowColor} 0%, rgba(4,2,8,0) 72%)`,
                     }}
@@ -1402,7 +1460,7 @@ export function SerenityFlow() {
                   <motion.div
                     layoutId={`symbol-${selectedElement.id}`}
                     transition={SMOOTH_TRANSITION}
-                    className="relative flex h-[155px] w-[155px] items-center justify-center sm:h-[170px] sm:w-[170px]"
+                    className="relative flex h-full w-full items-center justify-center p-1"
                   >
                     <ResilientEmblemImage
                       src={selectedElement.image}
@@ -1418,7 +1476,7 @@ export function SerenityFlow() {
                   animate={{opacity: 1, y: 0}}
                   exit={{opacity: 0, y: 6}}
                   transition={{...FADE_TRANSITION, delay: 0.1}}
-                  className="mt-6 font-serif text-3xl font-semibold tracking-tight text-[#f5f0fc]"
+                  className="mt-5 font-serif text-2xl font-semibold tracking-tight text-[#f5f0fc] min-[375px]:mt-6 min-[375px]:text-3xl"
                 >
                   {selectedElement.title}
                 </motion.h2>
@@ -1428,7 +1486,7 @@ export function SerenityFlow() {
                   animate={{opacity: 1, y: 0}}
                   exit={{opacity: 0, y: 6}}
                   transition={{...FADE_TRANSITION, delay: 0.16}}
-                  className="mt-3 text-sm leading-relaxed text-[#cfc4e3] [text-wrap:balance]"
+                  className="mt-2.5 text-[13.5px] leading-relaxed text-[#cfc4e3] min-[375px]:mt-3 min-[375px]:text-sm [text-wrap:balance]"
                 >
                   {selectedElement.shortMeaning}
                 </motion.p>
@@ -1449,16 +1507,16 @@ export function SerenityFlow() {
               exit={{opacity: 0}}
               transition={{duration: 0.35, ease: LUXURY_EASE}}
               onClick={() => setShowAlternatives(false)}
-              className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-[#040208]/88 px-5 py-6 backdrop-blur-2xl pt-safe pb-safe"
+              className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-y-auto overflow-x-hidden bg-[#040208]/88 px-4 py-4 backdrop-blur-2xl min-[375px]:px-5 min-[375px]:py-6 pt-safe pb-safe"
             >
               {/* Top header */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="relative flex w-full max-w-[400px] items-center justify-center pt-1"
+                className="relative flex w-full max-w-[400px] shrink-0 items-center justify-center pt-1"
               >
                 <h2
                   id="alternatives-overlay-title"
-                  className="font-serif text-lg font-medium tracking-wide text-[#e9e2f5]"
+                  className="px-11 text-center font-serif text-base font-medium tracking-wide text-[#e9e2f5] min-[375px]:text-lg truncate"
                 >
                   Alternativas de logo
                 </h2>
@@ -1475,7 +1533,7 @@ export function SerenityFlow() {
               {/* Center Swipeable Card Stage (One by one with smooth left/right drag + transition) */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="flex w-full max-w-[400px] flex-1 flex-col items-center justify-center overflow-hidden py-3"
+                className="flex w-full max-w-[400px] flex-1 flex-col items-center justify-center py-2 min-[375px]:py-3"
               >
                 <AnimatePresence mode="wait" custom={altDirection}>
                   <motion.div
@@ -1492,7 +1550,7 @@ export function SerenityFlow() {
                     onDragEnd={handleAlternativeDragEnd}
                     className="flex w-full touch-pan-y flex-col items-center select-none cursor-grab active:cursor-grabbing"
                   >
-                    <div className="relative aspect-square w-full max-w-[270px] overflow-hidden rounded-3xl border border-[#e5d9f8]/20 bg-[#f8f5fc] p-2.5 shadow-[0_24px_64px_rgba(0,0,0,0.68)] sm:max-w-[300px]">
+                    <div className="relative aspect-square w-[min(74vw,max(168px,40dvh),300px)] overflow-hidden rounded-3xl border border-[#e5d9f8]/20 bg-[#f8f5fc] p-2 shadow-[0_24px_64px_rgba(0,0,0,0.68)] min-[375px]:p-2.5">
                       <ResilientEmblemImage
                         src={currentAlternative.image}
                         alt={`Alternativa de logo por ${currentAlternative.author}`}
@@ -1504,13 +1562,13 @@ export function SerenityFlow() {
                       initial={{opacity: 0, y: 8}}
                       animate={{opacity: 1, y: 0}}
                       transition={{duration: 0.4, delay: 0.1, ease: LUXURY_EASE}}
-                      className="mt-5 text-center"
+                      className="mt-4 text-center min-[375px]:mt-5"
                     >
-                      <p className="font-serif text-2xl font-semibold tracking-tight text-[#f5f0fc]">
+                      <p className="font-serif text-xl font-semibold tracking-tight text-[#f5f0fc] min-[375px]:text-2xl">
                         {currentAlternative.author}
                       </p>
                       {currentAlternative.subtitle ? (
-                        <p className="mt-1 font-serif text-base italic tracking-wide text-[#cfc4e3]">
+                        <p className="mt-1 font-serif text-sm italic tracking-wide text-[#cfc4e3] min-[375px]:text-base">
                           {currentAlternative.subtitle}
                         </p>
                       ) : null}
@@ -1522,7 +1580,7 @@ export function SerenityFlow() {
               {/* Left/Right Navigation Controls & Indicator Dots */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="flex w-full max-w-[320px] items-center justify-between pb-2"
+                className="flex w-full max-w-[320px] shrink-0 items-center justify-between pb-1 min-[375px]:pb-2"
               >
                 <button
                   type="button"
@@ -1533,7 +1591,7 @@ export function SerenityFlow() {
                   <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                 </button>
 
-                <div className="flex items-center gap-1" role="tablist" aria-label="Seleccionar alternativa">
+                <div className="flex items-center gap-0.5 min-[375px]:gap-1" role="tablist" aria-label="Seleccionar alternativa">
                   {LOGO_ALTERNATIVES.map((alt, idx) => {
                     const isActive = idx === altIndex;
                     return (
@@ -1548,12 +1606,12 @@ export function SerenityFlow() {
                           setAltDirection(idx > altIndex ? 1 : -1);
                           setAltIndex(idx);
                         }}
-                        className="flex min-h-[44px] min-w-[28px] items-center justify-center focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+                        className="flex min-h-[44px] min-w-[22px] items-center justify-center min-[375px]:min-w-[26px] focus-visible:outline-2 focus-visible:outline-[#d900ff]"
                       >
                         <span
                           className={`block h-1.5 rounded-full transition-all duration-300 ${
                             isActive
-                              ? 'w-6 bg-[#f5f0fc] shadow-[0_0_10px_rgba(245,240,252,0.5)]'
+                              ? 'w-5 min-[375px]:w-6 bg-[#f5f0fc] shadow-[0_0_10px_rgba(245,240,252,0.5)]'
                               : 'w-1.5 bg-[#82739e]/50 hover:bg-[#b4a6cc]'
                           }`}
                         />
@@ -1588,16 +1646,16 @@ export function SerenityFlow() {
               exit={{opacity: 0}}
               transition={{duration: 0.35, ease: LUXURY_EASE}}
               onClick={() => setShowGarments(false)}
-              className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-[#040208]/90 px-5 py-6 backdrop-blur-2xl pt-safe pb-safe"
+              className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-y-auto overflow-x-hidden bg-[#040208]/90 px-4 py-4 backdrop-blur-2xl min-[375px]:px-5 min-[375px]:py-6 pt-safe pb-safe"
             >
               {/* Top header */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="relative flex w-full max-w-[400px] items-center justify-center pt-1"
+                className="relative flex w-full max-w-[400px] shrink-0 items-center justify-center pt-1"
               >
                 <h2
                   id="garments-overlay-title"
-                  className="font-serif text-lg font-medium tracking-wide text-[#e9e2f5]"
+                  className="px-11 text-center font-serif text-base font-medium tracking-wide text-[#e9e2f5] min-[375px]:text-lg truncate"
                 >
                   Diseños de Polo y Jacket
                 </h2>
@@ -1614,7 +1672,7 @@ export function SerenityFlow() {
               {/* Center Animated Swipeable Showcase */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="flex w-full max-w-[400px] flex-1 flex-col items-center justify-center overflow-hidden py-2"
+                className="flex w-full max-w-[400px] flex-1 flex-col items-center justify-center py-2"
               >
                 <AnimatePresence mode="wait" custom={garmentDirection}>
                   <motion.div
@@ -1636,13 +1694,13 @@ export function SerenityFlow() {
                       initial={{opacity: 0, y: -4}}
                       animate={{opacity: 1, y: 0}}
                       transition={{duration: 0.35, delay: 0.08, ease: LUXURY_EASE}}
-                      className="mb-2.5 text-[11px] font-semibold tracking-[0.16em] text-[#a99bc4] uppercase"
+                      className="mb-2 text-[10.5px] font-semibold tracking-[0.16em] text-[#a99bc4] uppercase min-[375px]:mb-2.5 min-[375px]:text-[11px]"
                     >
                       {currentGarment.viewLabel}
                     </motion.span>
 
                     {/* Illuminated garment showcase card */}
-                    <div className="relative flex w-full max-w-[270px] items-center justify-center sm:max-w-[300px]">
+                    <div className="relative flex w-[min(72vw,max(160px,36dvh),300px)] items-center justify-center">
                       <motion.div
                         aria-hidden="true"
                         initial={{opacity: 0, scale: 0.82}}
@@ -1655,7 +1713,7 @@ export function SerenityFlow() {
                         }}
                       />
 
-                      <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-[#e5d9f8]/25 bg-white p-2.5 shadow-[0_24px_64px_rgba(0,0,0,0.72)]">
+                      <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-[#e5d9f8]/25 bg-white p-2 shadow-[0_24px_64px_rgba(0,0,0,0.72)] min-[375px]:p-2.5">
                         <ResilientEmblemImage
                           src={currentGarment.image}
                           alt={`${currentGarment.title} — ${currentGarment.viewLabel}`}
@@ -1678,12 +1736,12 @@ export function SerenityFlow() {
                       initial={{opacity: 0, y: 10}}
                       animate={{opacity: 1, y: 0}}
                       transition={{duration: 0.42, delay: 0.12, ease: LUXURY_EASE}}
-                      className="mt-4 flex max-w-[300px] flex-col items-center text-center"
+                      className="mt-3 flex max-w-[300px] flex-col items-center text-center min-[375px]:mt-4"
                     >
-                      <p className="font-serif text-2xl font-semibold tracking-tight text-[#f5f0fc] sm:text-[26px]">
+                      <p className="font-serif text-[22px] font-semibold tracking-tight text-[#f5f0fc] min-[375px]:text-2xl sm:text-[26px]">
                         {currentGarment.title}
                       </p>
-                      <p className="mt-1.5 text-[11px] leading-snug text-[#9d8ec0] [text-wrap:balance]">
+                      <p className="mt-1 text-[10.5px] leading-snug text-[#9d8ec0] min-[375px]:mt-1.5 min-[375px]:text-[11px] [text-wrap:balance]">
                         {currentGarment.disclaimer}
                       </p>
                     </motion.div>
@@ -1694,7 +1752,7 @@ export function SerenityFlow() {
               {/* Left/Right Navigation Controls & Indicator Dots */}
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="flex w-full max-w-[320px] items-center justify-between pb-2"
+                className="flex w-full max-w-[320px] shrink-0 items-center justify-between pb-1 min-[375px]:pb-2"
               >
                 <button
                   type="button"
@@ -1705,7 +1763,7 @@ export function SerenityFlow() {
                   <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                 </button>
 
-                <div className="flex items-center gap-1" role="tablist" aria-label="Seleccionar vista de diseño">
+                <div className="flex items-center gap-0.5 min-[375px]:gap-1" role="tablist" aria-label="Seleccionar vista de diseño">
                   {GARMENT_DESIGNS.map((garment, idx) => {
                     const isActive = idx === garmentIndex;
                     return (
@@ -1720,12 +1778,12 @@ export function SerenityFlow() {
                           setGarmentDirection(idx > garmentIndex ? 1 : -1);
                           setGarmentIndex(idx);
                         }}
-                        className="flex min-h-[44px] min-w-[24px] items-center justify-center focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+                        className="flex min-h-[44px] min-w-[22px] items-center justify-center min-[375px]:min-w-[24px] focus-visible:outline-2 focus-visible:outline-[#d900ff]"
                       >
                         <span
                           className={`block h-1.5 rounded-full transition-all duration-300 ${
                             isActive
-                              ? 'w-6 bg-[#f5f0fc] shadow-[0_0_10px_rgba(245,240,252,0.5)]'
+                              ? 'w-5 min-[375px]:w-6 bg-[#f5f0fc] shadow-[0_0_10px_rgba(245,240,252,0.5)]'
                               : 'w-1.5 bg-[#82739e]/50 hover:bg-[#b4a6cc]'
                           }`}
                         />
