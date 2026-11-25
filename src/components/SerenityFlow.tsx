@@ -6,10 +6,12 @@ import {
   motion,
   type PanInfo,
 } from 'motion/react';
-import {ArrowRight, ChevronLeft, ChevronRight, Images, X} from 'lucide-react';
+import {ArrowRight, ChevronLeft, ChevronRight, Images, Shirt, X} from 'lucide-react';
 import {
   CREDITS_LIST,
   EMBLEM_ELEMENTS,
+  GARMENT_DESIGNS,
+  LEGACY_PROMO_CONTENT,
   LOGO_ALTERNATIVES,
   MISSION_VISION_CONTENT,
   NAME_MEANING_CONTENT,
@@ -28,6 +30,7 @@ type StepId =
   | 'vision'
   | 'emblema'
   | 'nombre'
+  | 'legado'
   | 'ending';
 type InicioPhase = 'united' | 'icons' | 'blocks';
 
@@ -155,6 +158,27 @@ const ALTERNATIVE_SLIDE_VARIANTS = {
   }),
 };
 
+const GARMENT_SLIDE_VARIANTS = {
+  enter: (direction: number) => ({
+    x: direction >= 0 ? 72 : -72,
+    opacity: 0,
+    scale: 0.93,
+    rotate: direction >= 0 ? 1.8 : -1.8,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    rotate: 0,
+  },
+  exit: (direction: number) => ({
+    x: direction >= 0 ? -72 : 72,
+    opacity: 0,
+    scale: 0.93,
+    rotate: direction >= 0 ? -1.8 : 1.8,
+  }),
+};
+
 export function SerenityFlow() {
   const [step, setStep] = useState<StepId>('portada');
   const [inicioPhase, setInicioPhase] = useState<InicioPhase>('united');
@@ -164,6 +188,9 @@ export function SerenityFlow() {
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [altIndex, setAltIndex] = useState(0);
   const [altDirection, setAltDirection] = useState(1);
+  const [showGarments, setShowGarments] = useState(false);
+  const [garmentIndex, setGarmentIndex] = useState(0);
+  const [garmentDirection, setGarmentDirection] = useState(1);
   const [viewport, setViewport] = useState(() =>
     typeof window !== 'undefined'
       ? {w: window.innerWidth, h: window.innerHeight}
@@ -202,20 +229,31 @@ export function SerenityFlow() {
     );
   }, []);
 
+  const paginateGarments = useCallback((direction: number) => {
+    setGarmentDirection(direction);
+    setGarmentIndex(
+      (prev) => (prev + direction + GARMENT_DESIGNS.length) % GARMENT_DESIGNS.length
+    );
+  }, []);
+
   useEffect(() => {
-    if (!selectedElement && !showAlternatives) return;
+    if (!selectedElement && !showAlternatives && !showGarments) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (selectedElement) setSelectedElement(null);
         else if (showAlternatives) setShowAlternatives(false);
+        else if (showGarments) setShowGarments(false);
       } else if (showAlternatives) {
         if (e.key === 'ArrowRight') paginateAlternatives(1);
         else if (e.key === 'ArrowLeft') paginateAlternatives(-1);
+      } else if (showGarments) {
+        if (e.key === 'ArrowRight') paginateGarments(1);
+        else if (e.key === 'ArrowLeft') paginateGarments(-1);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedElement, showAlternatives, paginateAlternatives]);
+  }, [selectedElement, showAlternatives, showGarments, paginateAlternatives, paginateGarments]);
 
   const geometry = useMemo(() => {
     const effectiveW = Math.min(viewport.w, 430);
@@ -324,6 +362,7 @@ export function SerenityFlow() {
   const goToStep = (next: StepId) => {
     setSelectedElement(null);
     setShowAlternatives(false);
+    setShowGarments(false);
     if (next === 'emblema') {
       setInicioPhase('united');
       setHasInspectedIcon(false);
@@ -370,11 +409,15 @@ export function SerenityFlow() {
     } else if (step === 'nombre') {
       setStep('emblema');
       setInicioPhase(hasInspectedIcon ? 'icons' : 'blocks');
+    } else if (step === 'legado') {
+      goToStep('nombre');
     } else if (step === 'ending') {
       if (showAlternatives) {
         setShowAlternatives(false);
+      } else if (showGarments) {
+        setShowGarments(false);
       } else {
-        goToStep('nombre');
+        goToStep('legado');
       }
     }
   };
@@ -390,6 +433,17 @@ export function SerenityFlow() {
     }
   };
 
+  const handleGarmentDragEnd = (
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
+    if (info.offset.x < -42 || info.velocity.x < -280) {
+      paginateGarments(1);
+    } else if (info.offset.x > 42 || info.velocity.x > 280) {
+      paginateGarments(-1);
+    }
+  };
+
   const isCentered = step === 'portada';
   const wordmarkTargetY = isCentered
     ? geometry.introCenterWordmarkY
@@ -399,6 +453,7 @@ export function SerenityFlow() {
   const wordmarkTargetScale = isCentered ? 1.25 : step === 'nombre' ? 1.1 : 1;
 
   const currentAlternative = LOGO_ALTERNATIVES[altIndex];
+  const currentGarment = GARMENT_DESIGNS[garmentIndex];
 
   return (
     <MotionConfig reducedMotion="user">
@@ -1025,7 +1080,73 @@ export function SerenityFlow() {
                   </motion.div>
                 </div>
 
-                <ContinueButton onClick={() => goToStep('ending')} delay={0.22} />
+                <ContinueButton onClick={() => goToStep('legado')} delay={0.22} />
+              </motion.section>
+            )}
+
+            {/* ==================== 5. LEGADO / PROMOCIÓN SERENITY ==================== */}
+            {step === 'legado' && (
+              <motion.section
+                key="legado"
+                initial={{opacity: 0}}
+                animate={{opacity: 1}}
+                exit={{opacity: 0}}
+                transition={FADE_TRANSITION}
+                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+              >
+                <div className="flex flex-1 w-full flex-col items-center justify-center">
+                  <motion.div
+                    initial={{opacity: 0, y: 18, scale: 0.97}}
+                    animate={{opacity: 1, y: 0, scale: 1}}
+                    transition={{...SMOOTH_TRANSITION, delay: 0.1}}
+                    className="relative w-full max-w-[395px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 p-5 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform sm:p-6"
+                  >
+                    {/* Subtle cosmic top edge highlight */}
+                    <motion.div
+                      aria-hidden="true"
+                      initial={{scaleX: 0, opacity: 0}}
+                      animate={{scaleX: 1, opacity: 1}}
+                      transition={{duration: 0.8, delay: 0.2, ease: LUXURY_EASE}}
+                      className="mx-auto mb-4 h-px w-24 origin-center bg-gradient-to-r from-transparent via-[#d900ff]/65 to-transparent"
+                    />
+
+                    <div className="space-y-4 text-center">
+                      {LEGACY_PROMO_CONTENT.paragraphs.map((paragraph, pIdx) => (
+                        <motion.p
+                          key={pIdx}
+                          initial={{opacity: 0, y: 10}}
+                          animate={{opacity: 1, y: 0}}
+                          transition={{
+                            duration: 0.55,
+                            delay: 0.18 + pIdx * 0.14,
+                            ease: LUXURY_EASE,
+                          }}
+                          className="text-[13.5px] leading-relaxed text-[#cfc4e3] sm:text-[14.5px] [text-wrap:pretty]"
+                        >
+                          {paragraph.map((seg, sIdx) =>
+                            seg.bold ? (
+                              <strong key={sIdx} className="font-semibold text-[#ffffff]">
+                                {seg.text}
+                              </strong>
+                            ) : (
+                              <span key={sIdx}>{seg.text}</span>
+                            )
+                          )}
+                        </motion.p>
+                      ))}
+                    </div>
+
+                    <motion.div
+                      aria-hidden="true"
+                      initial={{scaleX: 0, opacity: 0}}
+                      animate={{scaleX: 1, opacity: 1}}
+                      transition={{duration: 0.8, delay: 0.38, ease: LUXURY_EASE}}
+                      className="mx-auto mt-4 h-px w-16 origin-center bg-gradient-to-r from-transparent via-[#e5d9f8]/30 to-transparent"
+                    />
+                  </motion.div>
+                </div>
+
+                <ContinueButton onClick={() => goToStep('ending')} delay={0.28} />
               </motion.section>
             )}
 
@@ -1127,12 +1248,52 @@ export function SerenityFlow() {
                   </motion.p>
                 </div>
 
-                {/* Small Credits + Alternativas de logo CTA */}
-                <div className="flex w-full flex-col items-center gap-3.5 pb-1">
+                {/* Action CTAs + Credits at the very bottom */}
+                <div className="flex w-full flex-col items-center gap-3 pb-1">
+                  <div className="flex w-full max-w-[270px] flex-col items-center gap-2.5">
+                    <motion.button
+                      type="button"
+                      onClick={() => {
+                        setGarmentDirection(1);
+                        setGarmentIndex(0);
+                        setShowGarments(true);
+                      }}
+                      initial={{opacity: 0, y: 10}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{duration: 0.55, delay: 1.32, ease: LUXURY_EASE}}
+                      className="group flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-[#e5d9f8]/25 bg-[#120c21]/85 px-5 py-2.5 text-xs font-semibold tracking-wide text-[#f5f0fc] backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition-all duration-200 hover:border-[#e5d9f8]/45 hover:bg-[#1a112d] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d900ff]"
+                    >
+                      <Shirt
+                        className="h-3.5 w-3.5 text-[#d900ff] transition-transform duration-200 group-hover:scale-110"
+                        aria-hidden="true"
+                      />
+                      <span>Diseños de Polo y Jacket</span>
+                    </motion.button>
+
+                    <motion.button
+                      type="button"
+                      onClick={() => {
+                        setAltDirection(1);
+                        setAltIndex(0);
+                        setShowAlternatives(true);
+                      }}
+                      initial={{opacity: 0, y: 10}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{duration: 0.55, delay: 1.44, ease: LUXURY_EASE}}
+                      className="group flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-[#e5d9f8]/25 bg-[#120c21]/85 px-5 py-2.5 text-xs font-semibold tracking-wide text-[#f5f0fc] backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition-all duration-200 hover:border-[#e5d9f8]/45 hover:bg-[#1a112d] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d900ff]"
+                    >
+                      <Images
+                        className="h-3.5 w-3.5 text-[#d900ff] transition-transform duration-200 group-hover:scale-110"
+                        aria-hidden="true"
+                      />
+                      <span>Alternativas de logo</span>
+                    </motion.button>
+                  </div>
+
                   <motion.div
                     initial={{opacity: 0, y: 8}}
                     animate={{opacity: 1, y: 0}}
-                    transition={{duration: 0.6, delay: 1.32, ease: LUXURY_EASE}}
+                    transition={{duration: 0.6, delay: 1.56, ease: LUXURY_EASE}}
                     className="space-y-0.5 text-center text-[11px] leading-relaxed text-[#82739e]"
                   >
                     {CREDITS_LIST.map((credit) => (
@@ -1141,25 +1302,6 @@ export function SerenityFlow() {
                       </p>
                     ))}
                   </motion.div>
-
-                  <motion.button
-                    type="button"
-                    onClick={() => {
-                      setAltDirection(1);
-                      setAltIndex(0);
-                      setShowAlternatives(true);
-                    }}
-                    initial={{opacity: 0, y: 10}}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{duration: 0.55, delay: 1.48, ease: LUXURY_EASE}}
-                    className="group flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-[#e5d9f8]/25 bg-[#120c21]/85 px-6 py-2.5 text-xs font-semibold tracking-wide text-[#f5f0fc] backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition-all duration-200 hover:border-[#e5d9f8]/45 hover:bg-[#1a112d] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d900ff]"
-                  >
-                    <Images
-                      className="h-3.5 w-3.5 text-[#d900ff] transition-transform duration-200 group-hover:scale-110"
-                      aria-hidden="true"
-                    />
-                    <span>Alternativas de logo</span>
-                  </motion.button>
                 </div>
               </motion.section>
             )}
@@ -1380,6 +1522,177 @@ export function SerenityFlow() {
           ) : null}
         </AnimatePresence>
 
+        {/* Swipeable Polo & Jacket Designs Showcase Overlay */}
+        <AnimatePresence>
+          {showGarments ? (
+            <motion.div
+              key="garments-overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="garments-overlay-title"
+              initial={{opacity: 0}}
+              animate={{opacity: 1}}
+              exit={{opacity: 0}}
+              transition={{duration: 0.35, ease: LUXURY_EASE}}
+              onClick={() => setShowGarments(false)}
+              className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-[#040208]/90 px-5 py-6 backdrop-blur-2xl pt-safe pb-safe"
+            >
+              {/* Top header */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="relative flex w-full max-w-[400px] items-center justify-center pt-1"
+              >
+                <h2
+                  id="garments-overlay-title"
+                  className="font-serif text-lg font-medium tracking-wide text-[#e9e2f5]"
+                >
+                  Diseños de Polo y Jacket
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowGarments(false)}
+                  aria-label="Cerrar"
+                  className="absolute right-0 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-[#b4a6cc] transition-colors hover:text-[#f5f0fc] focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+                >
+                  <X className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* Center Animated Swipeable Showcase */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex w-full max-w-[400px] flex-1 flex-col items-center justify-center overflow-hidden py-2"
+              >
+                <AnimatePresence mode="wait" custom={garmentDirection}>
+                  <motion.div
+                    key={currentGarment.id}
+                    custom={garmentDirection}
+                    variants={GARMENT_SLIDE_VARIANTS}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{duration: 0.52, ease: LUXURY_EASE}}
+                    drag="x"
+                    dragConstraints={{left: 0, right: 0}}
+                    dragElastic={0.28}
+                    onDragEnd={handleGarmentDragEnd}
+                    className="flex w-full touch-pan-y flex-col items-center select-none cursor-grab active:cursor-grabbing will-change-transform"
+                  >
+                    {/* View angle eyebrow */}
+                    <motion.span
+                      initial={{opacity: 0, y: -4}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{duration: 0.35, delay: 0.08, ease: LUXURY_EASE}}
+                      className="mb-2.5 text-[11px] font-semibold tracking-[0.16em] text-[#a99bc4] uppercase"
+                    >
+                      {currentGarment.viewLabel}
+                    </motion.span>
+
+                    {/* Illuminated garment showcase card */}
+                    <div className="relative flex w-full max-w-[270px] items-center justify-center sm:max-w-[300px]">
+                      <motion.div
+                        aria-hidden="true"
+                        initial={{opacity: 0, scale: 0.82}}
+                        animate={{opacity: 0.75, scale: 1}}
+                        transition={{duration: 0.6, ease: LUXURY_EASE}}
+                        className="pointer-events-none absolute -inset-4 rounded-3xl blur-3xl will-change-transform"
+                        style={{
+                          background:
+                            'radial-gradient(circle, rgba(217,0,255,0.22) 0%, rgba(142,68,236,0.22) 48%, rgba(4,2,8,0) 78%)',
+                        }}
+                      />
+
+                      <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-[#e5d9f8]/25 bg-white p-2.5 shadow-[0_24px_64px_rgba(0,0,0,0.72)]">
+                        <ResilientEmblemImage
+                          src={currentGarment.image}
+                          alt={`${currentGarment.title} — ${currentGarment.viewLabel}`}
+                          className="pointer-events-none h-full w-full rounded-2xl object-contain"
+                        />
+
+                        {/* Diagonal premium shimmer sweep on slide reveal */}
+                        <motion.div
+                          aria-hidden="true"
+                          initial={{x: '-130%', opacity: 0}}
+                          animate={{x: '220%', opacity: [0, 0.55, 0]}}
+                          transition={{duration: 1.25, delay: 0.14, ease: ASSEMBLY_EASE}}
+                          className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent will-change-transform"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Large garment title + small illustrative disclaimer */}
+                    <motion.div
+                      initial={{opacity: 0, y: 10}}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{duration: 0.42, delay: 0.12, ease: LUXURY_EASE}}
+                      className="mt-4 flex max-w-[300px] flex-col items-center text-center"
+                    >
+                      <p className="font-serif text-2xl font-semibold tracking-tight text-[#f5f0fc] sm:text-[26px]">
+                        {currentGarment.title}
+                      </p>
+                      <p className="mt-1.5 text-[11px] leading-snug text-[#9d8ec0] [text-wrap:balance]">
+                        {currentGarment.disclaimer}
+                      </p>
+                    </motion.div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Left/Right Navigation Controls & Indicator Dots */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex w-full max-w-[320px] items-center justify-between pb-2"
+              >
+                <button
+                  type="button"
+                  onClick={() => paginateGarments(-1)}
+                  aria-label="Diseño anterior"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[#e5d9f8]/15 bg-[#0b0714]/75 text-[#e9e2f5] transition-colors hover:border-[#e5d9f8]/35 hover:bg-[#160e29] active:scale-95 focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+                >
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+
+                <div className="flex items-center gap-1" role="tablist" aria-label="Seleccionar vista de diseño">
+                  {GARMENT_DESIGNS.map((garment, idx) => {
+                    const isActive = idx === garmentIndex;
+                    return (
+                      <button
+                        key={garment.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-label={`Ver ${garment.viewLabel}`}
+                        onClick={() => {
+                          if (idx === garmentIndex) return;
+                          setGarmentDirection(idx > garmentIndex ? 1 : -1);
+                          setGarmentIndex(idx);
+                        }}
+                        className="flex min-h-[44px] min-w-[24px] items-center justify-center focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+                      >
+                        <span
+                          className={`block h-1.5 rounded-full transition-all duration-300 ${
+                            isActive
+                              ? 'w-6 bg-[#f5f0fc] shadow-[0_0_10px_rgba(245,240,252,0.5)]'
+                              : 'w-1.5 bg-[#82739e]/50 hover:bg-[#b4a6cc]'
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => paginateGarments(1)}
+                  aria-label="Siguiente diseño"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[#e5d9f8]/15 bg-[#0b0714]/75 text-[#e9e2f5] transition-colors hover:border-[#e5d9f8]/35 hover:bg-[#160e29] active:scale-95 focus-visible:outline-2 focus-visible:outline-[#d900ff]"
+                >
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
       </main>
     </LayoutGroup>

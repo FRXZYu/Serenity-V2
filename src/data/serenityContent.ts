@@ -32,6 +32,43 @@ export const NAME_MEANING_CONTENT = {
   image: SERENITY_MOUNTAIN_IMAGE,
 };
 
+export interface TextSegment {
+  text: string;
+  bold: boolean;
+}
+
+export const LEGACY_PROMO_CONTENT: {paragraphs: TextSegment[][]} = {
+  paragraphs: [
+    [
+      {text: 'Esta prom será recordada como ', bold: false},
+      {text: 'SERENITY', bold: true},
+      {
+        text: ', la promoción que alumbrará un nuevo camino en el momento en que sigamos nuestro propio rumbo, marcado por la ',
+        bold: false,
+      },
+      {text: 'determinación', bold: true},
+      {text: ' de continuar avanzando a través de las dificultades, la ', bold: false},
+      {text: 'valentía', bold: true},
+      {text: ' para defender nuestros valores y la ', bold: false},
+      {text: 'pasión', bold: true},
+      {text: ' con la que seguiremos nuestros sueños.', bold: false},
+    ],
+    [
+      {text: 'Con nosotros, ', bold: false},
+      {text: 'Serenity', bold: true},
+      {text: ' cobrará un ', bold: false},
+      {text: 'significado eterno', bold: true},
+      {text: ' plasmado en una ', bold: false},
+      {text: 'promoción de cambio', bold: true},
+      {text: '. Una generación que caminará ', bold: false},
+      {text: 'Ad Astra ("Hacia las estrellas")', bold: true},
+      {text: ' porque no nos detendremos ', bold: false},
+      {text: 'hasta alcanzar la grandeza', bold: true},
+      {text: '.', bold: false},
+    ],
+  ],
+};
+
 export const UNFORGETTABLE_CONTENT = {
   question: '¿Qué hace inolvidable a una promoción?',
   answer:
@@ -97,6 +134,52 @@ export const LOGO_ALTERNATIVES: LogoAlternative[] = [
     id: 'alt-kirenia-00003',
     image: assetUrl('assets/aistudio/00003_84149276.png'),
     author: 'Kirenia Gutiérrez',
+  },
+];
+
+export interface GarmentDesign {
+  id: string;
+  title: string;
+  viewLabel: string;
+  disclaimer: string;
+  image: string;
+}
+
+export const GARMENT_DESIGNS: GarmentDesign[] = [
+  {
+    id: 'polo-frente',
+    title: 'Polo',
+    viewLabel: 'En frente del polo',
+    disclaimer: 'Diseño de polo colocado con fines ilustrativos, puede ser sujeto a cambios.',
+    image: assetUrl('assets/aistudio/1795608594677_361b94f7.jpg'),
+  },
+  {
+    id: 'polo-atras',
+    title: 'Polo',
+    viewLabel: 'Atrás del polo',
+    disclaimer: 'Diseño de polo colocado con fines ilustrativos, puede ser sujeto a cambios.',
+    image: assetUrl('assets/aistudio/1795608700218_e1c5f5e7.jpg'),
+  },
+  {
+    id: 'jacket-frente',
+    title: 'Jacket varsity',
+    viewLabel: 'En frente del abrigo',
+    disclaimer: 'Diseño colocado con fines ilustrativos, puede ser sujeto a cambios.',
+    image: assetUrl('assets/aistudio/1795608410254_9b4032b1.jpg'),
+  },
+  {
+    id: 'jacket-atras',
+    title: 'Jacket varsity',
+    viewLabel: 'Atrás del abrigo',
+    disclaimer: 'Diseño colocado con fines ilustrativos, puede ser sujeto a cambios.',
+    image: assetUrl('assets/aistudio/1795607900106_a171c54a.jpg'),
+  },
+  {
+    id: 'jacket-lado',
+    title: 'Jacket varsity',
+    viewLabel: 'De lado del abrigo',
+    disclaimer: 'Diseño colocado con fines ilustrativos, puede ser sujeto a cambios.',
+    image: assetUrl('assets/aistudio/1795608456658_a883e488.jpg'),
   },
 ];
 

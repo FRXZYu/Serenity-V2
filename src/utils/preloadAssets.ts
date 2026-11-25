@@ -1,5 +1,6 @@
 import {
   EMBLEM_ELEMENTS,
+  GARMENT_DESIGNS,
   LOGO_ALTERNATIVES,
   SERENITY_MOUNTAIN_IMAGE,
   SERENITY_WORDMARK,
@@ -10,6 +11,7 @@ export const ALL_SERENITY_ASSET_URLS: readonly string[] = [
   SERENITY_MOUNTAIN_IMAGE,
   ...EMBLEM_ELEMENTS.map((el) => el.image),
   ...LOGO_ALTERNATIVES.map((alt) => alt.image),
+  ...GARMENT_DESIGNS.map((garment) => garment.image),
 ];
 
 // Keep references in memory so mobile browsers never evict decoded bitmaps
