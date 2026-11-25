@@ -259,7 +259,7 @@ export function SerenityFlow() {
       },
     };
 
-    const nameCardWordmarkY = Math.max(24, viewport.h * 0.14 - wordmarkMetrics.top);
+    const nameCardWordmarkY = Math.max(8, Math.min(44, viewport.h * 0.085 - wordmarkMetrics.top));
     const introCenterWordmarkY = Math.max(
       0,
       viewport.h / 2 - (wordmarkMetrics.top + wordmarkMetrics.height / 2)
@@ -396,7 +396,7 @@ export function SerenityFlow() {
     : step === 'nombre'
       ? geometry.nameCardWordmarkY
       : 0;
-  const wordmarkTargetScale = isCentered ? 1.25 : 1;
+  const wordmarkTargetScale = isCentered ? 1.25 : step === 'nombre' ? 1.1 : 1;
 
   const currentAlternative = LOGO_ALTERNATIVES[altIndex];
 
@@ -959,20 +959,22 @@ export function SerenityFlow() {
                 animate={{opacity: 1}}
                 exit={{opacity: 0}}
                 transition={FADE_TRANSITION}
-                className="flex flex-1 flex-col items-center justify-between pb-6 pt-2 sm:pb-8"
+                className="flex flex-1 flex-col items-center justify-between pb-6 pt-12 sm:pb-8 sm:pt-14"
               >
                 <div className="flex flex-1 w-full flex-col items-center justify-center">
+                  {/* Single Unified Card: Meaning text takes center stage, subtle smaller infinite mountain below */}
                   <motion.div
-                    initial={{opacity: 0, y: 18, scale: 0.97}}
+                    initial={{opacity: 0, y: 16, scale: 0.97}}
                     animate={{opacity: 1, y: 0, scale: 1}}
-                    transition={{...SMOOTH_TRANSITION, delay: 0.14}}
-                    className="mt-6 w-full rounded-3xl border border-[#e5d9f8]/15 bg-[#0b0714]/82 p-6 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.65)] will-change-transform sm:p-7"
+                    transition={{...SMOOTH_TRANSITION, delay: 0.12}}
+                    className="relative w-full max-w-[390px] overflow-hidden rounded-3xl border border-[#e5d9f8]/18 bg-[#0b0714]/88 p-5 pb-2 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.72)] will-change-transform sm:p-6 sm:pb-2.5"
                   >
-                    <div className="relative flex items-center justify-between gap-3 pb-3.5">
-                      <span className="text-[11px] font-medium tracking-[0.14em] text-[#82739e] uppercase">
+                    {/* Header: Significado label & pronunciation */}
+                    <div className="relative flex items-center justify-between gap-3 pb-2.5">
+                      <span className="text-[11px] font-semibold tracking-[0.16em] text-[#b8a7d6] uppercase">
                         Significado
                       </span>
-                      <span className="font-serif text-lg font-medium tracking-wide text-[#e9e2f5]">
+                      <span className="font-serif text-lg font-medium tracking-wide text-[#f5f0fc]">
                         {NAME_MEANING_CONTENT.pronunciation}
                       </span>
                       <motion.div
@@ -980,18 +982,46 @@ export function SerenityFlow() {
                         initial={{scaleX: 0}}
                         animate={{scaleX: 1}}
                         transition={{duration: 0.65, delay: 0.28, ease: LUXURY_EASE}}
-                        className="absolute inset-x-0 bottom-0 h-px origin-center bg-[#e5d9f8]/14"
+                        className="absolute inset-x-0 bottom-0 h-px origin-center bg-gradient-to-r from-transparent via-[#e5d9f8]/24 to-transparent"
                       />
                     </div>
 
-                    <motion.p
+                    {/* Meaning Statement Text (primary visual focus) */}
+                    <motion.div
                       initial={{opacity: 0, y: 8}}
                       animate={{opacity: 1, y: 0}}
-                      transition={{duration: 0.5, delay: 0.28, ease: LUXURY_EASE}}
-                      className="mt-4 text-center text-sm leading-relaxed text-[#cfc4e3]"
+                      transition={{duration: 0.5, delay: 0.3, ease: LUXURY_EASE}}
+                      className="mt-3.5 space-y-2.5 text-center"
                     >
-                      {NAME_MEANING_CONTENT.whyThisName}
-                    </motion.p>
+                      <p className="text-[14.5px] leading-relaxed text-[#f0eafb] sm:text-[15px] font-normal">
+                        {NAME_MEANING_CONTENT.whyThisName}
+                      </p>
+                      <p className="text-[13.5px] leading-relaxed text-[#d7cce9] sm:text-[14px] font-normal">
+                        {NAME_MEANING_CONTENT.extraMeaning}
+                      </p>
+                    </motion.div>
+
+                    {/* Compact transparent Mountain PNG accent below: no borders, no respiration, infinite fade */}
+                    <div className="relative -mb-1 mt-3 flex items-center justify-center overflow-hidden">
+                      <motion.div
+                        initial={{opacity: 0, filter: 'blur(12px)', y: 8}}
+                        animate={{opacity: 0.86, filter: 'blur(0px)', y: 0}}
+                        transition={{duration: 0.85, delay: 0.38, ease: LUXURY_EASE}}
+                        className="relative w-full max-w-[165px] sm:max-w-[185px]"
+                        style={{
+                          maskImage:
+                            'radial-gradient(ellipse 92% 86% at 50% 38%, black 50%, transparent 97%)',
+                          WebkitMaskImage:
+                            'radial-gradient(ellipse 92% 86% at 50% 38%, black 50%, transparent 97%)',
+                        }}
+                      >
+                        <ResilientEmblemImage
+                          src={NAME_MEANING_CONTENT.image}
+                          alt="Serenity — Montaña infinita"
+                          className="pointer-events-none block h-auto w-full object-contain"
+                        />
+                      </motion.div>
+                    </div>
                   </motion.div>
                 </div>
 
@@ -1349,6 +1379,8 @@ export function SerenityFlow() {
             </motion.div>
           ) : null}
         </AnimatePresence>
+
+
       </main>
     </LayoutGroup>
     </MotionConfig>

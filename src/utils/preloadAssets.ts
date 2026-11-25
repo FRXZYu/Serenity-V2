@@ -1,11 +1,13 @@
 import {
   EMBLEM_ELEMENTS,
   LOGO_ALTERNATIVES,
+  SERENITY_MOUNTAIN_IMAGE,
   SERENITY_WORDMARK,
 } from '../data/serenityContent';
 
 export const ALL_SERENITY_ASSET_URLS: readonly string[] = [
   SERENITY_WORDMARK,
+  SERENITY_MOUNTAIN_IMAGE,
   ...EMBLEM_ELEMENTS.map((el) => el.image),
   ...LOGO_ALTERNATIVES.map((alt) => alt.image),
 ];

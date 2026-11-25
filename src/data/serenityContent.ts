@@ -21,10 +21,15 @@ export const SERENITY_WORDMARK = assetUrl('assets/aistudio/serenity_logo_9895c4c
 
 export const SERENITY_SLOGAN = 'Find me in the future';
 
+export const SERENITY_MOUNTAIN_IMAGE = assetUrl('assets/aistudio/monta_a_serenity_70b526cb.png');
+
 export const NAME_MEANING_CONTENT = {
   pronunciation: '/səˈrɛnɪti/',
   whyThisName:
     'Significa el estado de calma o tranquilidad. Pero cuando lo elegí para nosotros, quise darle una sensación especial.',
+  extraMeaning:
+    'De estar subiendo una montaña, las nubes tapando la vista, luego ves cómo poco a poco el sol se asoma y ahí te das cuenta de que has llegado a la cima.',
+  image: SERENITY_MOUNTAIN_IMAGE,
 };
 
 export const UNFORGETTABLE_CONTENT = {
@@ -74,13 +79,23 @@ export const LOGO_ALTERNATIVES: LogoAlternative[] = [
     subtitle: 'Hecho a mano',
   },
   {
-    id: 'alt-kirenia-0000',
-    image: assetUrl('assets/aistudio/3_20261123_102415_0000_fc664d56.png'),
+    id: 'alt-kirenia-0002',
+    image: assetUrl('assets/aistudio/9_20261123_102415_0002_5b780fc6.png'),
     author: 'Kirenia Gutiérrez',
   },
   {
-    id: 'alt-kirenia-0002',
-    image: assetUrl('assets/aistudio/9_20261123_102415_0002_5b780fc6.png'),
+    id: 'alt-kirenia-00001',
+    image: assetUrl('assets/aistudio/00001_2455e18d.png'),
+    author: 'Kirenia Gutiérrez',
+  },
+  {
+    id: 'alt-kirenia-00002',
+    image: assetUrl('assets/aistudio/00002_4d55f9e9.png'),
+    author: 'Kirenia Gutiérrez',
+  },
+  {
+    id: 'alt-kirenia-00003',
+    image: assetUrl('assets/aistudio/00003_84149276.png'),
     author: 'Kirenia Gutiérrez',
   },
 ];
